@@ -1,0 +1,672 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}</style></head><body>
+<title>Gooey Jars</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<style>
+/* Layout: one portrait phone stage centered on a dark lab bench; HTML overlays for menus. Single committed dark look. */
+:root {
+  color-scheme: dark;
+  --bench: #10202a;
+  --bench-2: #183140;
+  --glass: rgba(205, 240, 255, 0.16);
+  --glass-edge: rgba(205, 240, 255, 0.55);
+  --ink: #f2fbff;
+  --ink-soft: #9fc2d1;
+  --accent: #ffd23f;
+  --danger: #ff6b6b;
+  --font: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+}
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bench); color: var(--ink); font-family: var(--font);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+#stage { position: relative; height: 100%; max-height: 960px; aspect-ratio: 9 / 16; max-width: 100%; }
+canvas { width: 100%; height: 100%; display: block; border-radius: 22px; touch-action: manipulation; }
+.ov[hidden] { display: none; }
+.ov { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(6, 16, 22, 0.72); border-radius: 22px; padding: 20px; }
+.card { width: min(100%, 360px); background: var(--bench-2); border: 2px solid var(--glass-edge); border-radius: 22px; padding: 22px 20px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
+.card h2 { margin: 0; font-size: 28px; font-weight: 700; color: var(--accent); text-wrap: balance; }
+.card p { margin: 0; font-size: 17px; line-height: 1.4; color: var(--ink); }
+.card .muted { color: var(--ink-soft); font-size: 15px; }
+.card ul { margin: 0; padding-left: 20px; text-align: left; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.35; }
+.btns { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+button { font-family: var(--font); font-size: 19px; font-weight: 600; border: 0; border-radius: 14px; padding: 12px 16px; cursor: pointer; background: var(--accent); color: #2a2100; }
+button.ghost { background: transparent; color: var(--ink); border: 2px solid var(--glass-edge); }
+button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.lvpick { display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 18px; color: var(--ink-soft); }
+.lvpick button { padding: 6px 14px; font-size: 18px; }
+.intro-ic { width: 72px; height: 72px; margin: 0 auto; border-radius: 20px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-size: 38px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div id="stage">
+  <canvas id="cv" aria-label="Bàn chơi Gooey Jars"></canvas>
+  <div class="ov" id="ovMenu">
+    <div class="card">
+      <h2>Gooey Jars</h2>
+      <p>Thả slime từ các ống xuống đúng hũ cùng màu. Slime cùng màu chạm nhau sẽ dính thành một khối.</p>
+      <div class="lvpick"><button class="ghost" id="lvMinus" aria-label="Giảm cấp">−</button><span id="lvLabel">Cấp 1</span><button class="ghost" id="lvPlus" aria-label="Tăng cấp">+</button></div>
+      <div class="btns"><button id="btnPlay">Chơi</button><button class="ghost" id="btnRules">Luật chơi</button></div>
+      <p class="muted">Bản chơi thử. Nút xem quảng cáo chỉ là giả lập.</p>
+    </div>
+  </div>
+  <div class="ov" id="ovRules" hidden>
+    <div class="card">
+      <h2>Luật chơi</h2>
+      <ul>
+        <li>Chạm một ống để thả khối slime dưới cùng xuống hũ cùng màu.</li>
+        <li>Mỗi hũ ghi dung tích. Khối to hơn chỗ trống thì phần thừa tràn xuống <b>ô chờ</b>.</li>
+        <li>Slime cùng màu trong ô chờ <b>tự dính thành một khối</b>, chỉ chiếm 1 ô. Khi hũ cùng màu xuất hiện, nó tự đổ vào.</li>
+        <li>Mỗi ô chờ chứa tối đa 4 đơn vị. Khối to hơn sẽ tràn sang ô bên cạnh.</li>
+        <li><b>Thắng:</b> đổ đầy mọi hũ. <b>Thua:</b> slime cần ô mới nhưng 4 ô chờ đã kín.</li>
+        <li>Ống có cổ hẹp chỉ nặn ra tối đa số đơn vị ghi trên cổ mỗi lần chạm.</li>
+      </ul>
+      <div class="btns"><button id="btnRulesOk">Đã hiểu</button></div>
+    </div>
+  </div>
+  <div class="ov" id="ovMsg" hidden>
+    <div class="card">
+      <div class="intro-ic" id="msgIc" hidden></div>
+      <h2 id="msgTitle"></h2>
+      <p id="msgText"></p>
+      <div class="btns" id="msgBtns"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const W = 540, H = 960;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+/* ---------------- palette ---------------- */
+const COLORS = [
+  { n: 'Xanh lá', c: '#7bd34a', d: '#4d9a24' },
+  { n: 'Hồng',    c: '#ff5fa2', d: '#c22f6e' },
+  { n: 'Xanh dương', c: '#3fa9f5', d: '#1c6fb0' },
+  { n: 'Tím',     c: '#a275ff', d: '#6a3fd0' },
+  { n: 'Cam',     c: '#ff9f1c', d: '#c46a00' },
+];
+
+/* ---------------- rng ---------------- */
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+const ri = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+function shuffle(r, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---------------- level params ----------------
+   k colors, m jars per color, cap range, n columns, maxV biggest blob,
+   necks: list of neck sizes, hidden: share of hidden blobs, intro: feature introduced */
+const LV = [
+  null,
+  { k: 2, m: 1, cap: [4, 5], n: 3, maxV: 2, show: 2, tray: 4, necks: [], hidden: 0, intro: 'start' },
+  { k: 3, m: 1, cap: [4, 6], n: 3, maxV: 3, show: 2, tray: 4, necks: [], hidden: 0 },
+  { k: 3, m: 2, cap: [4, 6], n: 4, maxV: 3, show: 2, tray: 4, necks: [], hidden: 0, intro: 'slot' },
+  { k: 4, m: 2, cap: [5, 7], n: 4, maxV: 4, show: 2, tray: 4, necks: [], hidden: 0 },
+  { k: 4, m: 2, cap: [4, 6], n: 4, maxV: 4, show: 2, tray: 4, necks: [], hidden: 0, intro: 'cut' },
+  { k: 4, m: 2, cap: [4, 6], n: 5, maxV: 4, show: 2, tray: 4, necks: [2], hidden: 0, intro: 'neck' },
+  { k: 5, m: 2, cap: [4, 7], n: 5, maxV: 4, show: 2, tray: 4, necks: [2, 3], hidden: 0 },
+  { k: 4, m: 3, cap: [4, 6], n: 5, maxV: 4, show: 2, tray: 4, necks: [], hidden: 0.35, intro: 'hidden' },
+  { k: 5, m: 2, cap: [4, 7], n: 5, maxV: 4, show: 2, tray: 4, necks: [3], hidden: 0.3 },
+  { k: 5, m: 3, cap: [4, 7], n: 5, maxV: 5, show: 2, tray: 4, necks: [2, 3], hidden: 0.3 },
+];
+const MAXLV = LV.length - 1;
+const SLOT_CAP = 4;      // a puddle in the tray holds at most 4 units
+
+/* ---------------- engine (shared by generator and game) ---------------- */
+function pourInto(st, c, v, log) {
+  // into displayed jars of color c, left to right
+  for (let i = 0; i < st.jars.length && v > 0; i++) {
+    const j = st.jars[i];
+    if (j && j.c === c && j.fill < j.cap) { const a = Math.min(v, j.cap - j.fill); j.fill += a; v -= a; log && log.push({ to: 'jar', i, a, c }); }
+  }
+  return v;
+}
+function toTray(st, c, v, log) {
+  // same colour sticks to an existing puddle (up to SLOT_CAP); the rest needs a new slot
+  while (v > 0) {
+    let s = st.tray.findIndex(t => t && t.c === c && t.v < SLOT_CAP);
+    if (s >= 0) { const a = Math.min(v, SLOT_CAP - st.tray[s].v); st.tray[s].v += a; v -= a; log && log.push({ to: 'tray', i: s, a, c, merge: true }); continue; }
+    s = st.tray.findIndex(t => !t);
+    if (s < 0) { st.overflow = v; return false; }
+    const a = Math.min(v, SLOT_CAP); st.tray[s] = { c, v: a }; v -= a; log && log.push({ to: 'tray', i: s, a, c });
+  }
+  return true;
+}
+function refill(st) { // replace full jars, then auto-pour tray; returns list of steps
+  const steps = [];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < st.jars.length; i++) {
+      const j = st.jars[i];
+      if (j && j.fill >= j.cap) { st.jars[i] = st.qi < st.queue.length ? { ...st.queue[st.qi++], fill: 0 } : null; steps.push({ kind: 'swap', i }); changed = true; }
+    }
+    for (let s = 0; s < st.tray.length; s++) {
+      const t = st.tray[s]; if (!t) continue;
+      for (let i = 0; i < st.jars.length && t.v > 0; i++) {
+        const j = st.jars[i];
+        if (j && j.c === t.c && j.fill < j.cap) { const a = Math.min(t.v, j.cap - j.fill); j.fill += a; t.v -= a; steps.push({ kind: 'auto', from: s, i, a, c: t.c }); changed = true; }
+      }
+      if (t.v <= 0) st.tray[s] = null;
+    }
+  }
+  return steps;
+}
+const cloneSt = st => ({ queue: st.queue, qi: st.qi, jars: st.jars.map(j => j && { ...j }), tray: st.tray.map(t => t && { ...t }) });
+const traySlotsUsed = st => st.tray.filter(Boolean).length;
+const done = st => st.jars.every(j => !j) && st.qi >= st.queue.length;
+
+/* ---------------- level generator (solvable by construction) ---------------- */
+function genLevel(n) {
+  const P = LV[n];
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const r = rng(n * 7919 + attempt * 104729 + 17);
+    const cols = shuffle(r, [0, 1, 2, 3, 4]).slice(0, P.k);
+    let queue = [];
+    cols.forEach(c => { for (let i = 0; i < P.m; i++) queue.push({ c, cap: ri(r, P.cap[0], P.cap[1]) }); });
+    queue = shuffle(r, queue);
+    const SHOW = P.show, BASE_TRAY = P.tray;
+    const st = { queue, qi: Math.min(SHOW, queue.length), jars: [], tray: Array(BASE_TRAY).fill(null) };
+    for (let i = 0; i < SHOW; i++) st.jars.push(i < queue.length ? { ...queue[i], fill: 0 } : null);
+    const need = {}; queue.forEach(q => need[q.c] = (need[q.c] || 0) + q.cap);
+    const S = [];
+    let guard = 0, ok = true;
+    while (!done(st)) {
+      if (++guard > 400) { ok = false; break; }
+      const trayAmt = c => st.tray.reduce((s, t) => s + (t && t.c === c ? t.v : 0), 0);
+      const outstanding = c => need[c] - trayAmt(c);
+      const shown = st.jars.filter(j => j && j.fill < j.cap).map(j => j.c);
+      let c;
+      const ahead = cols.filter(x => outstanding(x) > 0 && !shown.includes(x));
+      if (ahead.length && r() < 0.22 && traySlotsUsed(st) <= BASE_TRAY - 3) c = ahead[ri(r, 0, ahead.length - 1)];
+      else { const cand = shown.filter(x => outstanding(x) > 0); if (!cand.length) { ok = false; break; } c = cand[ri(r, 0, cand.length - 1)]; }
+      const vmax = Math.min(P.maxV, outstanding(c));
+      if (vmax < 1) continue;
+      let v = ri(r, 1, vmax);
+      const trial = cloneSt(st);
+      const left = pourInto(trial, c, v);
+      if (!toTray(trial, c, left) || traySlotsUsed(trial) > BASE_TRAY - 2) {
+        const j = st.jars.find(j => j && j.c === c && j.fill < j.cap);
+        if (!j) continue;
+        v = Math.min(v, j.cap - j.fill);
+      }
+      const left2 = pourInto(st, c, v); toTray(st, c, left2); need[c] -= v;
+      refill(st);
+      S.push({ c, v });
+    }
+    if (!ok) continue;
+    // distribute the release order into columns (each column is a queue, bottom first)
+    const colsArr = Array.from({ length: P.n }, () => []);
+    const height = a => a.reduce((s, b) => s + b.v, 0);
+    let placed = true;
+    for (const b of S) {
+      const opts = colsArr.map((a, i) => i).filter(i => (!colsArr[i].length || colsArr[i][colsArr[i].length - 1].c !== b.c) && height(colsArr[i]) + b.v <= 15);
+      if (!opts.length) { placed = false; break; }
+      // prefer the shorter columns so the board looks balanced
+      opts.sort((x, y) => height(colsArr[x]) - height(colsArr[y]));
+      const pick = opts[Math.min(opts.length - 1, Math.floor(r() * Math.min(3, opts.length)))];
+      colsArr[pick].push({ ...b });
+    }
+    if (!placed || colsArr.some(a => !a.length)) continue;
+    // necks and hidden blobs
+    const necks = Array(P.n).fill(0);
+    shuffle(r, colsArr.map((_, i) => i)).slice(0, P.necks.length).forEach((ci, k) => necks[ci] = P.necks[k]);
+    colsArr.forEach(a => a.forEach((b, i) => { if (i > 0 && r() < P.hidden) b.hidden = true; }));
+    return { cols: colsArr, necks, queue };
+  }
+  throw new Error('gen failed ' + n);
+}
+
+/* ---------------- game state ---------------- */
+let store = { level: 1, slot: 0, cut: 0, mute: false, seen: {} };
+try { const s = JSON.parse(localStorage.getItem('gooeyjars.v1') || 'null'); if (s && typeof s === 'object') store = Object.assign(store, s); } catch (e) {}
+const save = () => { try { localStorage.setItem('gooeyjars.v1', JSON.stringify(store)); } catch (e) {} };
+
+let G = null;            // current level
+let busy = false, phase = 'menu', cutMode = false;
+const anims = [];        // flying globs, pops
+let shakeT = 0;
+
+function startLevel(n) {
+  const L = genLevel(n);
+  G = {
+    n, cols: L.cols.map(a => a.map(b => ({ ...b }))), necks: L.necks,
+    show: LV[n].show,
+    st: { queue: L.queue, qi: Math.min(LV[n].show, L.queue.length), jars: [], tray: Array(LV[n].tray).fill(null) },
+    disp: [], trayDisp: [], moves: 0,
+  };
+  for (let i = 0; i < G.show; i++) G.st.jars.push(i < L.queue.length ? { ...L.queue[i], fill: 0 } : null);
+  G.disp = G.st.jars.map(j => j ? { ...j } : null);
+  G.trayDisp = G.st.tray.map(() => null);
+  busy = false; cutMode = false; phase = 'play';
+  anims.length = 0;
+  const intro = LV[n].intro;
+  if (n >= 3 && !store.seen.slotGift) { store.slot += 1; store.seen.slotGift = 1; }
+  if (n >= 5 && !store.seen.cutGift) { store.cut += 2; store.seen.cutGift = 1; }
+  save();
+  if (intro && !store.seen[intro]) showIntro(intro);
+}
+
+/* ---------------- layout ---------------- */
+const TANK = { x0: 34, x1: 506, yTop: 120, yBot: 452 };
+function colGeom(i) {
+  const n = G.cols.length, gap = 14, w = Math.min(78, (TANK.x1 - TANK.x0 - gap * (n - 1)) / n);
+  const total = n * w + (n - 1) * gap, x = (W - total) / 2 + i * (w + gap);
+  return { x, w, cx: x + w / 2 };
+}
+const UNIT = 21;
+function jarGeom(i) { const S = G.show, w = S === 2 ? 150 : 128, gap = S === 2 ? 40 : 22, x = (W - (S * w + (S - 1) * gap)) / 2 + i * (w + gap); return { x, y: 540, w, h: 150, cx: x + w / 2 }; }
+function trayGeom(i, n) { const w = 74, gap = 10, x = (W - (n * w + (n - 1) * gap)) / 2 + i * (w + gap); return { x, y: 776, w, h: 64, cx: x + w / 2, cy: 808 }; }
+const BOOST = [{ id: 'slot', label: 'Thêm ô', x: 150 }, { id: 'cut', label: 'Kéo cắt', x: 390 }];
+
+/* ---------------- sound ---------------- */
+let AC = null;
+function blop(f = 320, d = 0.12, type = 'sine', vol = 0.18) {
+  if (store.mute) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+    o.type = type; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.55, t + d);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + 0.02);
+  } catch (e) {}
+}
+
+/* ---------------- animation helpers ---------------- */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function fly(c, v, x0, y0, x1, y1, ms = 360) {
+  return new Promise(res => anims.push({ kind: 'fly', c, v, x0, y0, x1, y1, t0: performance.now(), ms, res }));
+}
+function pop(x, y, text, color = '#fff') { anims.push({ kind: 'pop', x, y, text, color, t0: performance.now(), ms: 700 }); }
+
+/* ---------------- moves ---------------- */
+async function tapColumn(ci) {
+  if (busy || phase !== 'play') return;
+  const col = G.cols[ci]; if (!col.length) return;
+  const g = colGeom(ci);
+  if (cutMode) {
+    const b = col[0];
+    if (b.v < 2) { pop(g.cx, TANK.yBot - 30, 'Quá nhỏ để cắt', '#ffd23f'); return; }
+    const a = Math.ceil(b.v / 2), c2 = b.v - a;
+    col.splice(0, 1, { c: b.c, v: a, cut: true }, { c: b.c, v: c2, cut: true });
+    store.cut--; save(); cutMode = false; blop(520, 0.1, 'triangle'); pop(g.cx, TANK.yBot - 40, 'Cắt!', '#fff');
+    return;
+  }
+  busy = true;
+  const b = col[0];
+  const neck = G.necks[ci];
+  const amt = neck ? Math.min(neck, b.v) : b.v;
+  if (neck && b.v > neck) b.v -= amt; else col.shift();
+  if (col[0]) col[0].hidden = false;
+  G.moves++;
+  blop(260 + amt * 25, 0.14);
+  // logic
+  const log = [];
+  const left = pourInto(G.st, b.c, amt, log);
+  const okTray = toTray(G.st, b.c, left, log);
+  // animate pours
+  const sx = g.cx, sy = TANK.yBot + 10;
+  for (const s of log) {
+    if (s.to === 'jar') {
+      const jg = jarGeom(s.i);
+      await fly(s.c, s.a, sx, sy, jg.cx, jg.y + 10);
+      G.disp[s.i].fill += s.a; blop(380, 0.08, 'sine', 0.12);
+    } else {
+      const tg = trayGeom(s.i, G.st.tray.length);
+      await fly(s.c, s.a, sx, sy, tg.cx, tg.cy - 10);
+      if (G.trayDisp[s.i]) { G.trayDisp[s.i].v += s.a; G.trayDisp[s.i].wob = 1; pop(tg.cx, tg.y - 6, 'Dính lại!', '#fff'); blop(180, 0.2, 'sine', 0.2); }
+      else { G.trayDisp[s.i] = { c: s.c, v: s.a, wob: 1 }; blop(220, 0.12); }
+      if (left > 0 && log.filter(x => x.to === 'jar').length) pop(tg.cx, tg.y - 28, 'Tràn ' + s.a, '#ffd23f');
+    }
+  }
+  if (!okTray) {
+    // place the overflow back in front of the board to keep state honest; offer one more slot
+    await lose(b.c, G.st.overflow || left);
+    return;
+  }
+  await settle();
+  busy = false;
+  checkWin();
+}
+
+async function settle() {
+  // jars filled -> leave, next jar, tray auto-pours
+  for (;;) {
+    const steps = refill(G.st);
+    if (!steps.length) break;
+    for (const s of steps) {
+      if (s.kind === 'swap') {
+        const jg = jarGeom(s.i);
+        pop(jg.cx, jg.y - 6, 'Đầy!', '#ffd23f'); blop(660, 0.18, 'triangle', 0.16);
+        await sleep(260);
+        G.disp[s.i] = G.st.jars[s.i] ? { ...G.st.jars[s.i], fill: 0, enter: performance.now() } : null;
+      } else {
+        const tg = trayGeom(s.from, G.st.tray.length), jg = jarGeom(s.i);
+        const td = G.trayDisp[s.from]; if (td) { td.v -= s.a; if (td.v <= 0) G.trayDisp[s.from] = null; }
+        await fly(s.c, s.a, tg.cx, tg.cy - 10, jg.cx, jg.y + 10, 320);
+        G.disp[s.i].fill += s.a; blop(400, 0.08, 'sine', 0.12);
+      }
+    }
+  }
+  // keep display tray in sync with logic
+  G.trayDisp = G.st.tray.map((t, i) => t ? { c: t.c, v: t.v, wob: (G.trayDisp[i] && G.trayDisp[i].wob) || 0 } : null);
+}
+
+function checkWin() {
+  if (!done(G.st)) return;
+  phase = 'win'; blop(520, 0.2, 'triangle'); setTimeout(() => blop(780, 0.25, 'triangle'), 160);
+  store.level = Math.max(store.level, Math.min(MAXLV, G.n + 1)); save();
+  const last = G.n >= MAXLV;
+  showMsg({ title: last ? 'Hết bản chơi thử!' : 'Hoàn thành cấp ' + G.n, text: last ? 'Bạn đã qua cả 10 cấp của bản thử.' : 'Đổ đầy mọi hũ trong ' + G.moves + ' lần chạm.',
+    btns: last ? [['Chơi lại cấp 1', () => { hideMsg(); startLevel(1); }], ['Về menu', () => { hideMsg(); toMenu(); }, 'ghost']]
+               : [['Cấp tiếp theo', () => { hideMsg(); startLevel(G.n + 1); }], ['Về menu', () => { hideMsg(); toMenu(); }, 'ghost']] });
+}
+
+async function lose(c, v) {
+  phase = 'lose'; shakeT = performance.now(); blop(140, 0.35, 'sawtooth', 0.12);
+  await sleep(350);
+  showMsg({ title: 'Hết ô chờ!', text: 'Còn ' + v + ' đơn vị slime ' + COLORS[c].n.toLowerCase() + ' không có chỗ.',
+    btns: [['Xem quảng cáo: +1 ô chờ', async () => {
+              hideMsg(); G.st.tray.push(null); G.trayDisp.push(null); toTray(G.st, c, v);
+              G.trayDisp = G.st.tray.map(t => t ? { c: t.c, v: t.v, wob: 1 } : null);
+              phase = 'play'; await settle(); busy = false; checkWin();
+           }], ['Chơi lại', () => { hideMsg(); startLevel(G.n); }, 'ghost']] });
+}
+
+function useBooster(id) {
+  if (busy || phase !== 'play') return;
+  if (id === 'slot') {
+    if (G.n < 3) return;
+    if (store.slot <= 0) return adOffer('slot');
+    if (G.st.tray.length >= 7) { pop(W / 2, 760, 'Tối đa 7 ô', '#ffd23f'); return; }
+    store.slot--; save(); G.st.tray.push(null); G.trayDisp.push(null); blop(600, 0.12, 'triangle'); pop(W / 2, 760, '+1 ô chờ', '#ffd23f');
+  } else {
+    if (G.n < 5) return;
+    if (cutMode) { cutMode = false; return; }
+    if (store.cut <= 0) return adOffer('cut');
+    cutMode = true; blop(500, 0.08, 'triangle');
+  }
+}
+function adOffer(id) {
+  const name = id === 'slot' ? 'Thêm ô' : 'Kéo cắt';
+  showMsg({ title: 'Hết ' + name, text: 'Xem một quảng cáo để nhận thêm 1 ' + name + '.', btns: [
+    ['Xem quảng cáo (giả lập)', () => { store[id]++; save(); hideMsg(); }], ['Để sau', hideMsg, 'ghost']] });
+}
+
+/* ---------------- intros ---------------- */
+const INTROS = {
+  start: ['🫙', 'Thả slime vào hũ', 'Chạm một ống để thả khối slime dưới cùng xuống hũ cùng màu. Đổ đầy mọi hũ là thắng.'],
+  slot: ['➕', 'Booster: Thêm ô', 'Mở thêm 1 ô chờ ngay trong màn. Bạn được tặng 1 lần.'],
+  cut: ['✂️', 'Booster: Kéo cắt', 'Chạm Kéo cắt rồi chạm một ống: khối dưới cùng bị chia đôi, để không đổ tràn hũ. Bạn được tặng 2 lần.'],
+  neck: ['⏳', 'Cổ ống hẹp', 'Ống có cổ hẹp chỉ nặn ra tối đa số đơn vị ghi trên cổ mỗi lần chạm. Khối to phải chạm nhiều lần.'],
+  hidden: ['❓', 'Slime bí ẩn', 'Khối có dấu ? chỉ lộ màu khi xuống dưới cùng ống.'],
+};
+function showIntro(k) {
+  const [ic, t, x] = INTROS[k]; store.seen[k] = 1; save();
+  showMsg({ ic, title: t, text: x, btns: [['Chơi', hideMsg]] });
+}
+
+/* ---------------- overlays ---------------- */
+function showMsg({ ic, title, text, btns }) {
+  $('msgIc').hidden = !ic; if (ic) $('msgIc').textContent = ic;
+  $('msgTitle').textContent = title; $('msgText').textContent = text;
+  const box = $('msgBtns'); box.innerHTML = '';
+  btns.forEach(([label, fn, cls]) => { const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls; b.onclick = fn; box.appendChild(b); });
+  $('ovMsg').hidden = false;
+}
+function hideMsg() { $('ovMsg').hidden = true; }
+function toMenu() { phase = 'menu'; $('lvLabel').textContent = 'Cấp ' + menuLv; $('ovMenu').hidden = false; }
+let menuLv = Math.min(MAXLV, Math.max(1, store.level | 0 || 1));
+$('lvLabel').textContent = 'Cấp ' + menuLv;
+$('lvMinus').onclick = () => { menuLv = Math.max(1, menuLv - 1); $('lvLabel').textContent = 'Cấp ' + menuLv; };
+$('lvPlus').onclick = () => { menuLv = Math.min(MAXLV, menuLv + 1); $('lvLabel').textContent = 'Cấp ' + menuLv; };
+$('btnPlay').onclick = () => { $('ovMenu').hidden = true; blop(400, 0.1); startLevel(menuLv); };
+$('btnRules').onclick = () => { $('ovRules').hidden = false; };
+$('btnRulesOk').onclick = () => { $('ovRules').hidden = true; };
+
+/* ---------------- drawing ---------------- */
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function slimeBlob(x, y, w, h, col, t, seed, text, hidden) {
+  // gooey rectangle with wobbling top and glossy highlight
+  const C = hidden ? { c: '#8aa0ab', d: '#5c7080' } : COLORS[col];
+  const amp = Math.min(4, h * 0.12);
+  ctx.beginPath();
+  ctx.moveTo(x + 8, y + h);
+  ctx.lineTo(x + w - 8, y + h);
+  ctx.quadraticCurveTo(x + w, y + h, x + w, y + h - 8);
+  ctx.lineTo(x + w, y + 10);
+  for (let i = 0; i <= 10; i++) {
+    const px = x + w - (w * i) / 10;
+    const py = y + 4 + Math.sin(t * 3 + seed + i * 0.9) * amp * 0.6;
+    ctx.lineTo(px, py);
+  }
+  ctx.lineTo(x, y + h - 8);
+  ctx.quadraticCurveTo(x, y + h, x + 8, y + h);
+  ctx.closePath();
+  const gr = ctx.createLinearGradient(x, y, x + w, y + h);
+  gr.addColorStop(0, C.c); gr.addColorStop(1, C.d);
+  ctx.fillStyle = gr; ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  rr(x + 7, y + 8, Math.max(4, w * 0.18), Math.max(4, h * 0.45), 6); ctx.fill();
+  if (text != null && h >= 18) {
+    ctx.fillStyle = '#fff'; ctx.font = '700 ' + Math.min(22, h * 0.7 + 6) + 'px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.strokeText(hidden ? '?' : text, x + w / 2, y + h / 2 + 2); ctx.fillText(hidden ? '?' : text, x + w / 2, y + h / 2 + 2);
+  }
+}
+function goo(x, y, r, col, t, seed) {
+  const C = COLORS[col];
+  ctx.beginPath();
+  for (let i = 0; i <= 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    const rr2 = r * (1 + Math.sin(t * 5 + seed + a * 3) * 0.06);
+    const px = x + Math.cos(a) * rr2, py = y + Math.sin(a) * rr2 * 0.86;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+  const gr = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+  gr.addColorStop(0, C.c); gr.addColorStop(1, C.d);
+  ctx.fillStyle = gr; ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.ellipse(x - r * 0.35, y - r * 0.35, r * 0.25, r * 0.15, -0.6, 0, Math.PI * 2); ctx.fill();
+}
+
+function draw(now) {
+  const t = now / 1000;
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+  // background bench + tiles
+  const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#173444'); bg.addColorStop(1, '#0d1c25');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 45) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 45) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  if (!G) return;
+  let sh = 0; if (shakeT && now - shakeT < 400) sh = Math.sin((now - shakeT) / 30) * 6 * (1 - (now - shakeT) / 400);
+  ctx.save(); ctx.translate(sh, 0);
+
+  // HUD
+  ctx.fillStyle = 'rgba(255,255,255,0.1)'; rr(20, 22, 130, 46, 23); ctx.fill();
+  ctx.fillStyle = '#f2fbff'; ctx.font = '700 22px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('Cấp ' + G.n, 85, 46);
+  const hb = [{ x: 404, ic: store.mute ? 'mute' : 'snd' }, { x: 458, ic: 'redo' }, { x: 512 - 0, ic: 'menu' }];
+  hb.forEach(b => { ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.beginPath(); ctx.arc(b.x - 14, 45, 22, 0, Math.PI * 2); ctx.fill(); drawIcon(b.ic, b.x - 14, 45); });
+  ctx.fillStyle = '#9fc2d1'; ctx.font = '500 17px Fredoka, sans-serif';
+  const left = G.st.queue.length - G.st.qi + G.st.jars.filter(Boolean).length;
+  ctx.fillText('Còn ' + left + ' hũ', W / 2 - 20, 46);
+
+  // tank glass
+  ctx.fillStyle = 'rgba(205,240,255,0.06)'; rr(22, 92, W - 44, 392, 26); ctx.fill();
+  ctx.strokeStyle = 'rgba(205,240,255,0.25)'; ctx.lineWidth = 2; rr(22, 92, W - 44, 392, 26); ctx.stroke();
+
+  // columns
+  G.cols.forEach((col, ci) => {
+    const g = colGeom(ci);
+    ctx.fillStyle = 'rgba(205,240,255,0.10)'; rr(g.x, TANK.yTop, g.w, TANK.yBot - TANK.yTop, 16); ctx.fill();
+    ctx.strokeStyle = cutMode ? 'rgba(255,210,63,0.9)' : 'rgba(205,240,255,0.45)'; ctx.lineWidth = cutMode ? 3 : 2; rr(g.x, TANK.yTop, g.w, TANK.yBot - TANK.yTop, 16); ctx.stroke();
+    let y = TANK.yBot - 6;
+    col.forEach((b, k) => {
+      const h = b.v * UNIT;
+      y -= h;
+      slimeBlob(g.x + 5, y, g.w - 10, h - 2, b.c, t, ci * 3 + k, b.v, b.hidden);
+    });
+    // nozzle / neck
+    const neck = G.necks[ci];
+    const nw = neck ? 16 + neck * 6 : g.w * 0.55;
+    ctx.fillStyle = neck ? '#ffd23f' : 'rgba(205,240,255,0.35)';
+    rr(g.cx - nw / 2, TANK.yBot + 2, nw, 16, 6); ctx.fill();
+    if (neck) { ctx.fillStyle = '#2a2100'; ctx.font = '700 13px Fredoka, sans-serif'; ctx.fillText('≤' + neck, g.cx, TANK.yBot + 11); }
+  });
+
+  // pipe rail
+  ctx.strokeStyle = 'rgba(205,240,255,0.18)'; ctx.lineWidth = 3; ctx.setLineDash([6, 8]);
+  ctx.beginPath(); ctx.moveTo(40, 510); ctx.lineTo(W - 40, 510); ctx.stroke(); ctx.setLineDash([]);
+
+  // jars
+  for (let i = 0; i < G.show; i++) {
+    const j = G.disp[i], g = jarGeom(i);
+    let dy = 0; if (j && j.enter) { const p = Math.min(1, (now - j.enter) / 300); dy = (1 - p) * -60; if (p >= 1) j.enter = 0; }
+    ctx.save(); ctx.translate(0, dy);
+    // glass
+    ctx.fillStyle = 'rgba(205,240,255,0.08)'; rr(g.x, g.y, g.w, g.h, 18); ctx.fill();
+    if (j) {
+      const C = COLORS[j.c];
+      const fh = (g.h - 16) * (j.fill / j.cap);
+      if (fh > 0) {
+        ctx.save(); rr(g.x + 4, g.y + 4, g.w - 8, g.h - 8, 14); ctx.clip();
+        const top = g.y + g.h - 6 - fh;
+        ctx.beginPath(); ctx.moveTo(g.x, g.y + g.h);
+        for (let k = 0; k <= 12; k++) ctx.lineTo(g.x + (g.w * k) / 12, top + Math.sin(t * 4 + k * 0.8) * 3);
+        ctx.lineTo(g.x + g.w, g.y + g.h); ctx.closePath();
+        const gr = ctx.createLinearGradient(0, top, 0, g.y + g.h); gr.addColorStop(0, C.c); gr.addColorStop(1, C.d);
+        ctx.fillStyle = gr; ctx.fill(); ctx.restore();
+      }
+      // lid band in jar color
+      ctx.fillStyle = C.c; rr(g.x + 14, g.y - 16, g.w - 28, 18, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.2)'; rr(g.x + 14, g.y - 4, g.w - 28, 6, 3); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = '700 26px Fredoka, sans-serif';
+      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      const lbl = Math.round(j.fill) + '/' + j.cap;
+      ctx.strokeText(lbl, g.cx, g.y + 44); ctx.fillText(lbl, g.cx, g.y + 44);
+    } else {
+      ctx.fillStyle = 'rgba(205,240,255,0.25)'; ctx.font = '500 16px Fredoka, sans-serif'; ctx.fillText('trống', g.cx, g.y + g.h / 2);
+    }
+    ctx.strokeStyle = 'rgba(205,240,255,0.6)'; ctx.lineWidth = 3; rr(g.x, g.y, g.w, g.h, 18); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; rr(g.x + 10, g.y + 14, 8, g.h - 40, 4); ctx.fill();
+    ctx.restore();
+  }
+  // queue preview
+  const nextQ = G.st.queue.slice(G.st.qi, G.st.qi + 6);
+  ctx.fillStyle = '#9fc2d1'; ctx.font = '500 16px Fredoka, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(nextQ.length ? 'Hũ tiếp theo:' : 'Không còn hũ chờ', 44, 722);
+  nextQ.forEach((q, k) => { ctx.fillStyle = COLORS[q.c].c; ctx.beginPath(); ctx.roundRect(160 + k * 46, 710, 36, 24, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.font = '700 15px Fredoka, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(q.cap, 178 + k * 46, 723); ctx.textAlign = 'left'; ctx.font = '500 16px Fredoka, sans-serif'; ctx.fillStyle = '#9fc2d1'; });
+  ctx.textAlign = 'center';
+
+  // tray
+  const tn = G.st.tray.length;
+  ctx.fillStyle = '#9fc2d1'; ctx.font = '500 16px Fredoka, sans-serif';
+  const used = G.st.tray.filter(Boolean).length;
+  ctx.fillText('Ô chờ ' + used + '/' + tn, W / 2, 758);
+  for (let i = 0; i < tn; i++) {
+    const g = trayGeom(i, tn);
+    ctx.fillStyle = 'rgba(205,240,255,0.08)'; rr(g.x, g.y, g.w, g.h, 16); ctx.fill();
+    ctx.strokeStyle = used >= tn - 1 ? 'rgba(255,107,107,0.7)' : 'rgba(205,240,255,0.35)'; ctx.lineWidth = 2; rr(g.x, g.y, g.w, g.h, 16); ctx.stroke();
+    const td = G.trayDisp[i];
+    if (td && td.v > 0) {
+      if (td.wob) td.wob = Math.max(0, td.wob - 0.03);
+      const r = Math.min(30, 13 + td.v * 2.4) * (1 + td.wob * 0.2);
+      goo(g.cx, g.cy + 2, r, td.c, t, i);
+      ctx.fillStyle = '#fff'; ctx.font = '700 20px Fredoka, sans-serif'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.strokeText(td.v, g.cx, g.cy + 3); ctx.fillText(td.v, g.cx, g.cy + 3);
+    }
+  }
+
+  // boosters
+  BOOST.forEach(b => {
+    const unlocked = b.id === 'slot' ? G.n >= 3 : G.n >= 5;
+    const active = b.id === 'cut' && cutMode;
+    ctx.globalAlpha = unlocked ? 1 : 0.35;
+    ctx.fillStyle = active ? '#ffd23f' : 'rgba(255,255,255,0.12)'; rr(b.x - 62, 864, 124, 64, 20); ctx.fill();
+    drawIcon(b.id, b.x - 30, 896, active ? '#2a2100' : '#f2fbff');
+    ctx.fillStyle = active ? '#2a2100' : '#f2fbff'; ctx.font = '600 17px Fredoka, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(unlocked ? b.label : 'Cấp ' + (b.id === 'slot' ? 3 : 5), b.x - 10, 897); ctx.textAlign = 'center';
+    if (unlocked) { const c = store[b.id]; ctx.fillStyle = c > 0 ? '#ff5fa2' : '#ffd23f'; ctx.beginPath(); ctx.arc(b.x + 56, 866, 14, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = c > 0 ? '#fff' : '#2a2100'; ctx.font = '700 15px Fredoka, sans-serif'; ctx.fillText(c > 0 ? c : '+', b.x + 56, 867); }
+    ctx.globalAlpha = 1;
+  });
+  if (cutMode) { ctx.fillStyle = '#ffd23f'; ctx.font = '600 18px Fredoka, sans-serif'; ctx.fillText('Chạm một ống để chia đôi khối dưới cùng', W / 2, 948); }
+
+  // level 1 hand hint
+  if (G.n === 1 && G.moves === 0 && phase === 'play' && $('ovMsg').hidden) {
+    const g = colGeom(0); const bob = Math.sin(t * 5) * 8;
+    ctx.font = '42px sans-serif'; ctx.fillText('👆', g.cx + 10, TANK.yBot - 40 + bob);
+  }
+
+  // anims
+  for (let i = anims.length - 1; i >= 0; i--) {
+    const a = anims[i], p = Math.min(1, (now - a.t0) / a.ms);
+    if (a.kind === 'fly') {
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      const mx = (a.x0 + a.x1) / 2, my = Math.min(a.y0, a.y1) - 40;
+      const x = (1 - e) * (1 - e) * a.x0 + 2 * (1 - e) * e * mx + e * e * a.x1;
+      const y = (1 - e) * (1 - e) * a.y0 + 2 * (1 - e) * e * my + e * e * a.y1;
+      goo(x, y, Math.min(26, 10 + a.v * 2.6), a.c, t, i);
+      if (p >= 1) { anims.splice(i, 1); a.res(); }
+    } else if (a.kind === 'pop') {
+      ctx.globalAlpha = 1 - p; ctx.fillStyle = a.color; ctx.font = '700 22px Fredoka, sans-serif';
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.strokeText(a.text, a.x, a.y - p * 30); ctx.fillText(a.text, a.x, a.y - p * 30); ctx.globalAlpha = 1;
+      if (p >= 1) anims.splice(i, 1);
+    }
+  }
+  ctx.restore();
+}
+
+function drawIcon(id, x, y, col = '#f2fbff') {
+  ctx.save(); ctx.translate(x, y); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  if (id === 'snd' || id === 'mute') {
+    ctx.moveTo(-9, -4); ctx.lineTo(-4, -4); ctx.lineTo(2, -9); ctx.lineTo(2, 9); ctx.lineTo(-4, 4); ctx.lineTo(-9, 4); ctx.closePath(); ctx.stroke();
+    ctx.beginPath(); if (id === 'snd') { ctx.arc(3, 0, 8, -0.8, 0.8); } else { ctx.moveTo(6, -5); ctx.lineTo(12, 5); ctx.moveTo(12, -5); ctx.lineTo(6, 5); } ctx.stroke();
+  } else if (id === 'redo') {
+    ctx.arc(0, 0, 9, -2.4, 2.2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-9, -9); ctx.lineTo(-7, -2); ctx.lineTo(-1, -5); ctx.stroke();
+  } else if (id === 'menu') {
+    for (const k of [-6, 0, 6]) { ctx.moveTo(-9, k); ctx.lineTo(9, k); } ctx.stroke();
+  } else if (id === 'slot') {
+    ctx.roundRect(-11, -9, 22, 18, 5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 4); ctx.moveTo(-4, 0); ctx.lineTo(4, 0); ctx.stroke();
+  } else if (id === 'cut') {
+    ctx.arc(-6, 6, 4, 0, Math.PI * 2); ctx.moveTo(10, 6); ctx.arc(6, 6, 4, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-3, 3); ctx.lineTo(8, -10); ctx.moveTo(3, 3); ctx.lineTo(-8, -10); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------------- input ---------------- */
+function toLocal(ev) { const r = cv.getBoundingClientRect(); return { x: (ev.clientX - r.left) * W / r.width, y: (ev.clientY - r.top) * H / r.height }; }
+cv.addEventListener('pointerdown', ev => {
+  if (!G || phase === 'menu') return;
+  if (AC && AC.state === 'suspended') AC.resume();
+  const p = toLocal(ev);
+  // HUD buttons
+  if (p.y < 75) {
+    if (Math.hypot(p.x - 390, p.y - 45) < 24) { store.mute = !store.mute; save(); return; }
+    if (Math.hypot(p.x - 444, p.y - 45) < 24) { if (!busy) startLevel(G.n); return; }
+    if (Math.hypot(p.x - 498, p.y - 45) < 24) { if (!busy) toMenu(); return; }
+    return;
+  }
+  if (phase !== 'play') return;
+  if (p.y >= TANK.yTop - 20 && p.y <= TANK.yBot + 30) {
+    for (let i = 0; i < G.cols.length; i++) { const g = colGeom(i); if (p.x >= g.x - 6 && p.x <= g.x + g.w + 6) { tapColumn(i); return; } }
+  }
+  if (p.y >= 860 && p.y <= 932) { for (const b of BOOST) if (Math.abs(p.x - b.x) < 66) { useBooster(b.id); return; } }
+});
+
+/* ---------------- loop & resize ---------------- */
+function fit() { const r = cv.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 3); cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); }
+window.addEventListener('resize', fit); fit();
+function loop(now) { draw(now); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+window.__gooey = { genLevel, LV, startLevel, tapColumn, pourInto, toTray, refill, cloneSt, done, get G() { return G; }, get phase() { return phase; } };
+})();
+</script>
+</body></html>
