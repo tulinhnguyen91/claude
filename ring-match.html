@@ -1,0 +1,767 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ring Match</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap">
+<style>
+:root{
+  --bg:#FFF2F8; --fg:#4A2442; --muted:#9A6688; --card:#FFFFFF; --line:#F1D5E6;
+  --accent:#E0408B; --accent-fg:#FFFFFF; --accent-2:#6E4FC9; --chip:#FFFFFF;
+  --scrim:rgba(74,36,66,.45); --shadow:0 12px 32px rgba(150,60,120,.24);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1F1119; --fg:#FBE6F1; --muted:#C79BB8; --card:#2E1B28; --line:#4F3045;
+  --accent:#FF6BAA; --accent-fg:#2B0A1B; --accent-2:#B59BFF; --chip:#2E1B28;
+  --scrim:rgba(14,4,10,.62); --shadow:0 12px 32px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1F1119; --fg:#FBE6F1; --muted:#C79BB8; --card:#2E1B28; --line:#4F3045;
+  --accent:#FF6BAA; --accent-fg:#2B0A1B; --accent-2:#B59BFF; --chip:#2E1B28;
+  --scrim:rgba(14,4,10,.62); --shadow:0 12px 32px rgba(0,0,0,.45); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Baloo 2','Nunito',system-ui,'Segoe UI',sans-serif;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.app{width:min(100%,calc((100vh - 168px)*.625),440px);width:min(100%,calc((100dvh - 168px)*.625),440px);margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.bar{display:flex;align-items:center;gap:10px;min-width:0}
+.brand{font-weight:800;font-size:20px;letter-spacing:.2px;color:var(--accent);flex:1;min-width:0;white-space:nowrap}
+.lvl{font-weight:800;font-size:15px;background:var(--chip);border:2px solid var(--line);border-radius:999px;padding:2px 14px;color:var(--fg)}
+.ib{width:38px;height:38px;border-radius:12px;border:2px solid var(--line);background:var(--chip);color:var(--accent-2);display:grid;place-items:center;cursor:pointer;padding:0}
+.ib:active{transform:scale(.94)}
+.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ib.off .wave{display:none}
+.ib:not(.off) .cross{display:none}
+.stage{position:relative;border-radius:26px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:400/640;background:#FBE7F1;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;width:100%;height:100%}
+.ov{position:absolute;inset:0;display:grid;place-items:center;background:var(--scrim);padding:18px;backdrop-filter:blur(2px)}
+.card{background:var(--card);color:var(--fg);border-radius:24px;padding:22px 20px 20px;width:100%;max-width:330px;text-align:center;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;animation:pop .28s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.card h1,.card h2{margin:0;font-size:30px;line-height:1.05;color:var(--accent);font-weight:800;text-wrap:balance}
+.card p{margin:0;color:var(--muted);font-size:15px;line-height:1.35;text-wrap:balance}
+.rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;text-align:left}
+.rules li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.3;color:var(--fg);font-weight:600}
+.rules b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-size:13px;font-weight:800}
+.btn{font:inherit;font-weight:800;font-size:18px;border:0;border-radius:16px;padding:10px 18px;cursor:pointer;background:var(--accent);color:var(--accent-fg);box-shadow:0 5px 0 rgba(0,0,0,.16)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.16)}
+.btn.sec{background:transparent;color:var(--accent-2);box-shadow:none;border:2px solid var(--line);font-size:15px;padding:7px 14px}
+.stat{font-size:16px;font-weight:800;color:var(--fg)}
+.stat small{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.row{display:flex;gap:8px;flex-direction:column}
+.cands{display:flex;justify-content:center;gap:6px}
+
+.boosts{display:flex;gap:6px;justify-content:center;min-height:56px}
+.bst{position:relative;flex:1 1 0;min-width:0;max-width:56px;height:56px;border-radius:16px;border:2px solid var(--line);background:var(--chip);color:var(--accent-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;padding:0;font:inherit}
+.bst svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.bst span.nm{font-size:10px;font-weight:800;line-height:1;color:var(--muted);white-space:nowrap}
+.bst .ct{position:absolute;top:-7px;right:-5px;min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font-size:12px;font-weight:800;display:grid;place-items:center;padding:0 5px}
+.bst.zero{opacity:.6}.bst.zero .ct{background:var(--muted);color:var(--card)}
+.bst.on{background:var(--accent-2);color:var(--card);border-color:var(--accent-2)}.bst.on span.nm{color:var(--card)}
+.bst.new{animation:glow 1.2s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 5px rgba(224,64,139,.28)}}
+.bst:active{transform:scale(.94)}
+.toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:var(--fg);color:var(--bg);font-weight:800;font-size:14px;padding:6px 14px;border-radius:999px;max-width:92%;text-align:center;pointer-events:none;box-shadow:var(--shadow)}
+.tag{display:inline-block;align-self:center;font-size:12px;font-weight:800;letter-spacing:.08em;padding:2px 12px;border-radius:999px;background:var(--accent);color:var(--accent-fg)}
+.tag.ob{background:#6E4FC9;color:#fff}
+.btn.ad{background:var(--accent-2);color:#fff;font-size:15px;padding:9px 14px}
+.demo{font-size:11px;font-weight:800;letter-spacing:.06em;opacity:.85;margin-left:6px;background:rgba(0,0,0,.18);padding:1px 7px;border-radius:999px}
+.cands i{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;font-style:normal;font-weight:800;color:#fff;font-size:18px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.adbox{width:100%;max-width:300px;aspect-ratio:16/10;border-radius:16px;background:repeating-linear-gradient(45deg,#ddd 0 10px,#e9e9e9 10px 20px);color:#555;display:grid;place-items:center;font-weight:800;font-size:15px}
+.bigico{align-self:center;width:72px;height:72px;border-radius:22px;background:var(--bg);border:2px solid var(--line);display:grid;place-items:center;color:var(--accent-2)}
+.bigico svg{width:40px;height:40px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.jump{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-weight:700;font-size:14px}
+.jump button{width:30px;height:30px;border-radius:10px;border:2px solid var(--line);background:var(--chip);color:var(--accent-2);font:inherit;font-weight:800;cursor:pointer;padding:0}
+.jump output{min-width:64px;color:var(--fg);font-weight:800}
+</style>
+
+<main class="app">
+  <header class="bar">
+    <div class="brand">Ring Match</div>
+    <div class="lvl" id="lvl">Cấp 1</div>
+    <button class="ib" id="btnSnd" aria-label="Bật/tắt âm thanh" title="Âm thanh">
+      <svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="cross" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+    </button>
+    <button class="ib" id="btnRe" aria-label="Chơi lại cấp này" title="Chơi lại">
+      <svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.4-5.5"/><path d="M19.5 4.5v4h-4"/></svg>
+    </button>
+  </header>
+  <div class="stage" id="stage">
+    <canvas id="cv" width="800" height="1280"></canvas>
+    <div class="toast" id="toast" hidden></div>
+
+    <div class="ov" id="ovStart">
+      <div class="card">
+        <div class="cands" id="cands"></div>
+        <h1>Ring Match</h1>
+        <ul class="rules">
+          <li><b>1</b><span>Chạm vòng trên cùng của một cọc để đưa nó xuống khay. Chỉ lấy được vòng trên cùng.</span></li>
+          <li><b>2</b><span>Đủ 3 vòng cùng màu trong khay thì nổ và nhường chỗ.</span></li>
+          <li><b>3</b><span>Khay đầy là thua. Gỡ hết các cọc để thắng.</span></li>
+        </ul>
+        <button class="btn" id="btnPlay">Chơi</button>
+        <div class="jump" title="Nhảy tới cấp để xem từng cản/booster"><span>Nhảy tới</span><button id="lvMinus" aria-label="Giảm cấp">−</button><output id="lvOut">Cấp 1</output><button id="lvPlus" aria-label="Tăng cấp">+</button></div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovWin" hidden>
+      <div class="card">
+        <h2 id="winTitle">Sạch cọc!</h2>
+        <div class="stat" id="winStat"></div>
+        <div class="row">
+          <button class="btn" id="btnNext">Cấp tiếp theo</button>
+          <button class="btn ad" id="btnAdWin">Xem QC: thưởng x2<span class="demo">DEMO</span></button>
+          <button class="btn sec" id="btnAgain">Chơi lại cấp này</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovIntro" hidden>
+      <div class="card">
+        <span class="tag" id="inTag">BOOSTER MỚI</span>
+        <div class="bigico" id="inIco"></div>
+        <h2 id="inTitle"></h2>
+        <p id="inText"></p>
+        <button class="btn" id="btnGo">Bắt đầu</button>
+      </div>
+    </div>
+
+    <div class="ov" id="ovLose" hidden>
+      <div class="card">
+        <h2>Kẹt rồi!</h2>
+        <p id="loseText"></p>
+        <div class="row">
+          <button class="btn ad" id="btnAdLose">Xem QC: hồi sinh<span class="demo">DEMO</span></button>
+          <button class="btn" id="btnRetry">Thử lại</button>
+        </div>
+        <p style="font-size:12px">Hồi sinh = lùi 3 nước và thêm 1 ô khay.</p>
+      </div>
+    </div>
+
+    <div class="ov" id="ovAd" hidden>
+      <div class="card">
+        <span class="tag">QUẢNG CÁO DEMO</span>
+        <div class="adbox">Chỗ đặt quảng cáo</div>
+        <p id="adText">Còn 3 giây…</p>
+      </div>
+    </div>
+  </div>
+  <div class="boosts" id="boosts"></div>
+</main>
+
+<script>
+const RingSim = (function () {
+  const MAXN = 30, CAP0 = 7, CAPMAX = 9;
+  const INTROS = { 4: 'slot', 7: 'undo', 10: 'mystery', 13: 'shuffle', 16: 'lock', 19: 'magnet' };
+  const BOOSTERS = ['slot', 'undo', 'shuffle', 'magnet'];
+  const OBSTACLES = ['mystery', 'lock'];
+  const INTRO_LEVEL = {}; Object.keys(INTROS).forEach(k => { INTRO_LEVEL[INTROS[k]] = +k; });
+  const PHASE_OFF = [0, 1.0, 2.2];
+  function phaseOf(n) { return (n - 1) % 3; }
+  function diff(n) { return Math.min(6, Math.floor((n - 1) / 3)) * 0.8 + PHASE_OFF[phaseOf(n)]; }
+  function rng(seed) { let a = seed >>> 0; return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function shuffle(a, R) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  function params(n) {
+    const D = diff(n), ph = phaseOf(n), Dp = D * (0.6 + 0.4 * Math.min(1, (n - 1) / 12));
+    const P = { D, Dp, ph };
+    P.K = n <= 3 ? 3 : Dp < 1.5 ? 4 : Dp < 3 ? 5 : Dp < 4.5 ? 6 : 7;
+    P.T = n === 1 ? 3 : n === 2 ? 4 : n === 3 ? 5 : Math.min(10, Math.max(P.K, Math.round(4 + Dp * 1.1)));
+    P.pegs = n <= 3 ? 3 : Math.min(8, Math.max(4, 3 + Math.round(Dp * 0.6) + (P.T > 6 ? 1 : 0)));
+    P.maxH = n <= 3 ? 5 : 6;
+    P.pegs = Math.max(P.pegs, Math.ceil(3 * P.T / P.maxH) + (n <= 3 ? 1 : 0));
+    P.mystery = n >= INTRO_LEVEL.mystery ? (ph === 2 ? 4 : ph === 1 ? 3 : (n === INTRO_LEVEL.mystery ? 2 : 0)) : 0;
+    P.lock = n >= INTRO_LEVEL.lock ? (ph === 2 ? 2 : ph === 1 ? 1 : (n === INTRO_LEVEL.lock ? 1 : 0)) : 0;
+    P.lockN = D > 4 ? 3 : 2;
+    return P;
+  }
+  // level = { n, seed, cap, pegs:[[{c,h}...bottom..top]], lock:[n per peg] }
+  function makeLevel(n, seed) {
+    const P = params(n), R = rng(seed * 7919 + n * 104729);
+    const cols = []; for (let t = 0; t < P.T; t++) { const c = t < P.K ? t : Math.floor(R() * P.K); cols.push(c, c, c); }
+    shuffle(cols, R);
+    const pegs = Array.from({ length: P.pegs }, () => []);
+    // spread: random peg with room, biased so stacks end up uneven
+    cols.forEach(c => {
+      let k, g = 0; do { k = Math.floor(R() * P.pegs); g++; } while (pegs[k].length >= P.maxH && g < 200);
+      if (pegs[k].length >= P.maxH) k = pegs.findIndex(p => p.length < P.maxH);
+      pegs[k].push({ c, h: 0 });
+    });
+    // mystery rings: never the top of a peg
+    const cand = []; pegs.forEach((p, i) => { for (let j = 0; j < p.length - 1; j++) cand.push([i, j]); });
+    shuffle(cand, R); for (let i = 0; i < P.mystery && i < cand.length; i++) pegs[cand[i][0]][cand[i][1]].h = 1;
+    const lock = new Array(P.pegs).fill(0);
+    const li = pegs.map((p, i) => i).filter(i => pegs[i].length >= 2); shuffle(li, R);
+    for (let i = 0; i < P.lock && i < li.length; i++) lock[li[i]] = P.lockN;
+    return { n, seed, cap: CAP0, pegs, lock, params: P };
+  }
+
+  function Sim(level) {
+    this.level = level; this.cap = level.cap; this.nid = 1;
+    this.pegs = level.pegs.map(p => p.map(r => ({ id: this.nid++, c: r.c, h: r.h })));
+    this.lock = level.lock.slice(); this.dock = []; this.cleared = 0; this.taken = 0;
+    this.status = 'play'; this.reason = '';
+  }
+  Sim.prototype.clone = function () {
+    const s = Object.create(Sim.prototype);
+    s.level = this.level; s.cap = this.cap; s.nid = this.nid;
+    s.pegs = this.pegs.map(p => p.map(r => ({ id: r.id, c: r.c, h: r.h })));
+    s.lock = this.lock.slice(); s.dock = this.dock.map(r => ({ id: r.id, c: r.c }));
+    s.cleared = this.cleared; s.taken = this.taken; s.status = this.status; s.reason = this.reason; return s;
+  };
+  Sim.prototype.canTake = function (p) { return this.status === 'play' && this.pegs[p].length > 0 && this.lock[p] === 0; };
+  Sim.prototype.moves = function () { const m = []; for (let p = 0; p < this.pegs.length; p++) if (this.canTake(p)) m.push(p); return m; };
+  Sim.prototype.insertDock = function (r) {
+    let at = -1; for (let i = 0; i < this.dock.length; i++) if (this.dock[i].c === r.c) at = i;
+    if (at >= 0) this.dock.splice(at + 1, 0, r); else this.dock.push(r);
+  };
+  Sim.prototype.settle = function (ev) {
+    const cnt = {}; this.dock.forEach(r => { cnt[r.c] = (cnt[r.c] || 0) + 1; });
+    for (const c in cnt) if (cnt[c] >= 3) {
+      const ids = []; this.dock = this.dock.filter(r => { if (r.c === +c && ids.length < 3) { ids.push(r.id); return false; } return true; });
+      this.cleared++; this.lock = this.lock.map(v => v > 0 ? v - 1 : 0); ev.push({ t: 'clear', ids, c: +c });
+    }
+    if (this.pegs.every(p => !p.length) && !this.dock.length) { this.status = 'win'; return; }
+    if (this.dock.length >= this.cap) { this.status = 'lose'; this.reason = 'full'; }
+  };
+  Sim.prototype.take = function (p) {
+    if (!this.canTake(p)) return null;
+    const ev = []; const r = this.pegs[p].pop(); this.taken++;
+    const top = this.pegs[p][this.pegs[p].length - 1]; if (top && top.h) { top.h = 0; ev.push({ t: 'reveal', id: top.id }); }
+    this.insertDock({ id: r.id, c: r.c }); ev.push({ t: 'take', id: r.id, c: r.c, peg: p });
+    this.settle(ev); return ev;
+  };
+  Sim.prototype.addSlot = function () { if (this.cap >= CAPMAX) return false; this.cap++; if (this.status === 'lose') { this.status = 'play'; this.reason = ''; } return true; };
+  Sim.prototype.shuffleBoard = function (R) {
+    const slots = [], cols = []; this.pegs.forEach((p, i) => p.forEach((r, j) => { slots.push([i, j]); cols.push(r.c); }));
+    shuffle(cols, R); slots.forEach((s, k) => { this.pegs[s[0]][s[1]].c = cols[k]; });
+  };
+  // magnet: pull one ring of the dock's most common colour from the board (deepest-first is not allowed: take the one nearest the top)
+  Sim.prototype.magnet = function () {
+    const cnt = {}; this.dock.forEach(r => { cnt[r.c] = (cnt[r.c] || 0) + 1; });
+    let best = -1, bn = -1; for (const c in cnt) if (cnt[c] > bn) { bn = cnt[c]; best = +c; }
+    let pick = null;
+    for (let d = 0; d < 12 && !pick; d++) for (let p = 0; p < this.pegs.length && !pick; p++) {
+      const st = this.pegs[p], j = st.length - 1 - d;
+      if (j >= 0 && (best < 0 || st[j].c === best) && this.lock[p] === 0) pick = [p, j];
+    }
+    if (!pick) return null;
+    const ev = []; const r = this.pegs[pick[0]].splice(pick[1], 1)[0];
+    const top = this.pegs[pick[0]][this.pegs[pick[0]].length - 1]; if (top && top.h) { top.h = 0; ev.push({ t: 'reveal', id: top.id }); }
+    this.insertDock({ id: r.id, c: r.c }); ev.push({ t: 'take', id: r.id, c: r.c, peg: pick[0], magnet: true });
+    this.settle(ev); return ev;
+  };
+  Sim.prototype.key = function () {
+    return this.pegs.map(p => p.map(r => r.c + (r.h ? 'h' : '')).join('')).join('/') + '|' + this.dock.map(r => r.c).sort().join('') + '|' + this.lock.join('');
+  };
+
+  /* ------------------------------------------------------------- bots */
+  function score(s0, p, R, noise) {
+    const c = s0.clone(); const ev = c.take(p); if (!ev) return -1e9;
+    if (c.status === 'win') return 1e6; if (c.status === 'lose') return -1e5;
+    let v = 0; ev.forEach(e => { if (e.t === 'clear') v += 100; });
+    const cnt = {}; c.dock.forEach(r => { cnt[r.c] = (cnt[r.c] || 0) + 1; });
+    for (const k in cnt) v += cnt[k] === 2 ? 22 : cnt[k] === 1 ? 4 : 0;
+    v -= c.dock.length * 14; if (c.dock.length >= c.cap - 2) v -= 40;
+    // uncovered top helps if it matches something already in dock
+    c.pegs.forEach((st, i) => { const t = st[st.length - 1]; if (t && c.lock[i] === 0 && cnt[t.c]) v += cnt[t.c] === 2 ? 20 : 5; });
+    return v + (noise ? R() * noise : 0);
+  }
+  function runPlayer(level, seed, eps) {
+    const R = rng(seed * 131 + 11); let s = new Sim(level), g = 0;
+    while (s.status === 'play' && g++ < 120) {
+      const m = s.moves(); if (!m.length) break;
+      const sc = m.map(p => ({ p, v: score(s, p, R, 18) })); sc.sort((a, b) => b.v - a.v);
+      let pick = sc[0].p; if (R() < eps) pick = sc[Math.floor(R() * sc.length)].p;
+      s.take(pick);
+    }
+    return { status: s.status, steps: s.taken };
+  }
+  // exact-ish solver: DFS with memo (returns true when a win exists)
+  function solvable(level, cap) {
+    const root = new Sim(level), seen = new Set(); let nodes = 0;
+    function go(s) {
+      if (s.status === 'win') return true; if (s.status === 'lose') return false;
+      const k = s.key(); if (seen.has(k)) return false; seen.add(k); if (++nodes > (cap || 60000)) return false;
+      const R = rng(1); const m = s.moves().map(p => ({ p, v: score(s, p, R, 0) })).sort((a, b) => b.v - a.v);
+      for (const x of m) { const c = s.clone(); c.take(x.p); if (go(c)) return true; }
+      return false;
+    }
+    return go(root);
+  }
+  return { MAXN, CAP0, INTROS, BOOSTERS, OBSTACLES, INTRO_LEVEL, phaseOf, diff, params, makeLevel, rng, shuffle, Sim, runPlayer, solvable };
+})();
+
+const Game = (function () {
+  'use strict';
+  const S = RingSim;
+  const MAXN = 30;
+  const SEEDS = {"1":1,"2":1,"3":1,"4":18,"5":17,"6":22,"7":7,"8":60,"9":11,"10":3,"11":11,"12":33,"13":6,"14":8,"15":19,"16":4,"17":2,"18":5,"19":47,"20":10,"21":15,"22":21,"23":37,"24":15,"25":6,"26":10,"27":2,"28":4,"29":31,"30":42};
+  const W = 400, H = 640;
+  const COLORS = [
+    { main: '#E8504A', dark: '#A8302C', light: '#FF8F86' },
+    { main: '#F59A2B', dark: '#B56A0C', light: '#FFC672' },
+    { main: '#F2CC2E', dark: '#B39410', light: '#FFE985' },
+    { main: '#46BE6B', dark: '#25894A', light: '#8CE5A6' },
+    { main: '#2BB4D8', dark: '#1980A0', light: '#7BDDF2' },
+    { main: '#4F6FE3', dark: '#3047A8', light: '#93A8FF' },
+    { main: '#A45BDB', dark: '#7436A6', light: '#CE9BF5' }
+  ];
+  const FONT = '"Baloo 2","Nunito",system-ui,sans-serif';
+  const DOCK_Y = 506, DOCK_H = 70;
+
+  /* ------------------------------------------------------------------ sound */
+  const Snd = {
+    ctx: null, master: null, on: true,
+    init: function () {
+      if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+      try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.gain.value = .55; this.master.connect(this.ctx.destination); } catch (e) { this.ctx = null; }
+    },
+    tone: function (f, dur, type, vol, f2, delay) {
+      if (!this.ctx || !this.on) return;
+      const c = this.ctx, t = c.currentTime + (delay || 0), o = c.createOscillator(), g = c.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + .02);
+    },
+    take: function () { this.tone(500, .09, 'sine', .2, 760); this.tone(250, .06, 'triangle', .12, 180); },
+    clear: function (n) { [523, 659, 784, 1047].forEach((f, i) => this.tone(f * (1 + .06 * Math.min(n, 4)), .2, 'triangle', .2, 0, i * .06)); },
+    buzz: function () { this.tone(150, .16, 'square', .08, 110); },
+    win: function () { [523, 659, 784, 1047, 1319].forEach((f, i) => { this.tone(f, .3, 'triangle', .2, 0, i * .11); this.tone(f * 2, .2, 'sine', .06, 0, i * .11); }); },
+    lose: function () { [392, 330, 262].forEach((f, i) => this.tone(f, .3, 'sawtooth', .08, f * .95, i * .16)); },
+    magic: function () { [660, 880, 1320].forEach((f, i) => this.tone(f, .18, 'sine', .14, f * 1.2, i * .05)); },
+    pick: function () { this.tone(420, .07, 'sine', .2, 640); }
+  };
+
+  /* ------------------------------------------------------------------ state */
+  const G = {
+    n: 1, level: null, sim: null, phase: 'idle', sp: new Map(), dying: [], parts: [], hist: [], lock: 0, t: 0, time: 0, endT: 0, shake: 0,
+    combo: 0, hintT: 0, failMsg: '', onEnd: null, onUse: null, onToast: null, scale: 1, ctx: null, plan: null, R: S.rng(Date.now() & 0xffff), pop: []
+  };
+  function levelFor(n) { return S.makeLevel(n, SEEDS[n] || 1); }
+  function toast(m) { if (G.onToast) G.onToast(m); }
+
+  /* layout */
+  function layout() {
+    const P = G.sim.pegs.length, cols = P <= 4 ? P : Math.ceil(P / 2), rows = P <= 4 ? 1 : 2;
+    const cw = 360 / cols, ch = rows === 1 ? 330 : 200, y0 = rows === 1 ? 110 : 62;
+    const sp = rows === 1 ? 30 : 21, rx = Math.min(44, cw / 2 - 5);
+    return { P, cols, rows, cw, ch, y0, sp, rx };
+  }
+  function pegBox(p, L) { const r = (p / L.cols) | 0, c = p % L.cols; const n = r === 0 ? Math.min(L.P, L.cols) : L.P - L.cols; const off = (L.cols - n) * L.cw / 2; return { x: 20 + off + c * L.cw, y: L.y0 + r * L.ch, w: L.cw, h: L.ch }; }
+  function ringPos(p, j, L) { const b = pegBox(p, L); return { x: b.x + b.w / 2, y: b.y + b.h - 24 - j * L.sp }; }
+  function dockSlot(i) { const cap = G.sim.cap, sw = 360 / cap; return { x: 20 + sw * (i + .5), y: DOCK_Y + DOCK_H / 2 + 2, rx: Math.min(24, sw * .46) }; }
+
+  function ringMap() {
+    const m = new Map(), s = G.sim, L = layout();
+    s.pegs.forEach((st, p) => st.forEach((r, j) => { const q = ringPos(p, j, L); m.set(r.id, { c: r.c, h: r.h, x: q.x, y: q.y, rx: L.rx, peg: p, top: j === st.length - 1 }); }));
+    s.dock.forEach((r, i) => { const q = dockSlot(i); m.set(r.id, { c: r.c, h: 0, x: q.x, y: q.y, rx: q.rx, dock: true }); });
+    return m;
+  }
+  function syncSprites(snap) {
+    const m = ringMap();
+    m.forEach((t, id) => {
+      let sp = G.sp.get(id);
+      if (!sp) { sp = { id, x: t.x, y: t.y - (snap ? 0 : 30), rx: t.rx, sc: snap ? 1 : .2 }; G.sp.set(id, sp); }
+      if (snap) { sp.x = t.x; sp.y = t.y; sp.rx = t.rx; sp.sc = 1; }
+    });
+    Array.from(G.sp.keys()).forEach(id => { if (!m.has(id)) G.sp.delete(id); });
+  }
+  function burst(x, y, col, n, spd) {
+    for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = (0.3 + Math.random()) * (spd || 90); G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, life: .45 + Math.random() * .4, t: 0, c: col, r: 1.8 + Math.random() * 2.6 }); }
+  }
+
+  function startLevel(n) {
+    n = Math.max(1, Math.min(MAXN, n | 0));
+    G.n = n; G.level = levelFor(n); G.sim = new S.Sim(G.level);
+    G.sp = new Map(); G.dying = []; G.parts = []; G.hist = []; G.lock = .3; G.t = 0; G.endT = 0; G.hintT = 0; G.combo = 0; G.plan = null;
+    syncSprites(false); G.sp.forEach(sp => { sp.sc = .2; }); G.phase = 'play';
+  }
+  function preview(n) {
+    n = Math.max(1, Math.min(MAXN, n | 0));
+    G.n = n; G.level = levelFor(n); G.sim = new S.Sim(G.level);
+    G.sp = new Map(); G.dying = []; G.parts = []; G.hist = []; syncSprites(true); G.phase = 'idle';
+  }
+
+  /* ------------------------------------------------------------------ actions */
+  function applyEvents(ev) {
+    ev.forEach(e => {
+      if (e.t === 'take') { Snd.take(); }
+      else if (e.t === 'reveal') { const sp = G.sp.get(e.id); if (sp) sp.flash = 1; Snd.magic(); }
+      else if (e.t === 'clear') {
+        G.combo++; Snd.clear(G.combo);
+        e.ids.forEach((id, k) => { const sp = G.sp.get(id); if (sp) { G.dying.push({ sp, c: e.c, delay: .34 + k * .05 }); G.sp.delete(id); } });
+      }
+    });
+    if (G.sim.status === 'win') { G.phase = 'won'; G.endT = 1.1; }
+    else if (G.sim.status === 'lose') { G.phase = 'lost'; G.endT = 1.3; G.shake = .5; }
+  }
+  function takePeg(p) {
+    if (G.phase !== 'play' || G.lock > 0) return false;
+    const snap = G.sim.clone();
+    const s = G.sim;
+    if (s.lock[p] > 0) { Snd.buzz(); toast('Cọc bị khóa! Cần nổ thêm ' + s.lock[p] + ' lần nữa'); return false; }
+    const ev = s.take(p); if (!ev) return false;
+    G.hist.push(snap); if (G.hist.length > 30) G.hist.shift();
+    G.lock = .12; G.hintT = 0; applyEvents(ev); return true;
+  }
+  function tap(x, y) {
+    if (G.phase !== 'play') return;
+    const L = layout();
+    for (let p = 0; p < L.P; p++) { const b = pegBox(p, L); if (x >= b.x && x <= b.x + b.w && y >= b.y - 6 && y <= b.y + b.h) { takePeg(p); return; } }
+  }
+  function restore(snap) { G.sim = snap.clone(); G.sp = new Map(); G.dying = []; syncSprites(true); }
+  function useBooster(id) {
+    if (G.phase !== 'play') return 'none';
+    const s = G.sim;
+    if (id === 'slot') { if (!s.addSlot()) { G.failMsg = 'Khay đã tối đa ' + S.CAP0 + '+2 ô'; return 'fail'; } G.sp.forEach(sp => { }); Snd.magic(); return 'ok'; }
+    if (id === 'undo') { if (!G.hist.length) { G.failMsg = 'Chưa có gì để hoàn tác'; return 'fail'; } restore(G.hist.pop()); G.lock = .15; Snd.magic(); return 'ok'; }
+    if (id === 'shuffle') {
+      if (s.pegs.every(p => p.length === 0)) { G.failMsg = 'Hết vòng trên cọc'; return 'fail'; }
+      G.hist.push(s.clone()); s.shuffleBoard(G.R); Snd.magic(); G.pop.push(1); G.shake = .25; return 'ok';
+    }
+    if (id === 'magnet') {
+      const snap = s.clone(); const ev = s.magnet(); if (!ev) { G.failMsg = 'Không có vòng nào để hút'; return 'fail'; }
+      G.hist.push(snap); applyEvents(ev); Snd.magic(); return 'ok';
+    }
+    return 'none';
+  }
+  // demo "watch an ad" revive: rewind 3 moves and add one dock slot
+  function revive() {
+    let snap = null; for (let i = 0; i < 3 && G.hist.length; i++) snap = G.hist.pop();
+    if (snap) restore(snap);
+    G.sim.status = 'play'; G.sim.reason = ''; G.sim.addSlot(); G.phase = 'play'; G.lock = .3; G.endT = 0; Snd.magic();
+  }
+
+  /* ------------------------------------------------------------------ update */
+  function update(dt) {
+    dt = Math.min(dt, 0.05); G.time += dt;
+    if (G.phase === 'play') { G.t += dt; G.hintT += dt; }
+    if (G.lock > 0) G.lock -= dt; if (G.shake > 0) G.shake -= dt;
+    if (G.sim) {
+      const m = ringMap();
+      // new rings (e.g. restored) get sprites
+      m.forEach((t, id) => { if (!G.sp.has(id)) G.sp.set(id, { id, x: t.x, y: t.y, rx: t.rx, sc: 1 }); });
+      G.sp.forEach((sp, id) => {
+        const t = m.get(id); if (!t) return;
+        const dx = t.x - sp.x, dy = t.y - sp.y, d = Math.hypot(dx, dy);
+        sp.moving = d > 3; sp.t = t;
+        if (d > .5) { const st = Math.min(d, (380 + d * 7) * dt); sp.x += dx / d * st; sp.y += dy / d * st; } else { sp.x = t.x; sp.y = t.y; }
+        sp.rx += (t.rx - sp.rx) * Math.min(1, dt * 14);
+        if (sp.sc < 1) sp.sc = Math.min(1, sp.sc + dt * 4);
+        if (sp.flash > 0) sp.flash = Math.max(0, sp.flash - dt * 2);
+      });
+    }
+    G.dying = G.dying.filter(d => {
+      d.delay -= dt;
+      if (d.delay <= 0) { burst(d.sp.x, d.sp.y, COLORS[d.c].light, 14, 130); return false; }
+      const dock = G.sim ? null : null; return true;
+    });
+    G.parts = G.parts.filter(p => { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 280 * dt; return p.t < p.life; });
+    if (G.dying.length === 0 && G.combo && G.phase === 'play') G.combo = 0;
+    if (G.endT > 0) {
+      G.endT -= dt;
+      if (G.endT <= 0) {
+        if (G.phase === 'won') { G.phase = 'done'; Snd.win(); if (G.onEnd) G.onEnd('win', { n: G.n, t: G.t, steps: G.sim.taken }); }
+        else if (G.phase === 'lost') { G.phase = 'done'; Snd.lose(); if (G.onEnd) G.onEnd('lose', { n: G.n, reason: G.sim.reason }); }
+      }
+    }
+    if (G.plan && G.phase === 'play' && G.lock <= 0) { const p = G.plan.next(); if (p === null) G.plan = null; else takePeg(p); }
+  }
+  // test helper: DFS plan through the real UI path
+  function autoplay() {
+    const root = new S.Sim(G.level), seen = new Set(); let path = null;
+    (function go(s, pa) {
+      if (path) return; if (s.status === 'win') { path = pa; return; } if (s.status === 'lose') return;
+      const k = s.key(); if (seen.has(k) || seen.size > 80000) return; seen.add(k);
+      const m = s.moves().map(p => { const c = s.clone(); c.take(p); return { p, v: c.dock.length }; }).sort((a, b) => a.v - b.v);
+      for (const x of m) { const c = s.clone(); c.take(x.p); go(c, pa.concat([x.p])); if (path) return; }
+    })(root, []);
+    if (!path) return 'none'; let i = 0; G.plan = { next: () => i < path.length ? path[i++] : null }; return 'win';
+  }
+
+  /* ------------------------------------------------------------------ drawing */
+  function rr(c, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function ring(c, x, y, rx, col, hid, o) {
+    o = o || {}; const ry = rx * .42, th = rx * .26; const k = o.sc === undefined ? 1 : o.sc; rx *= k;
+    const cc = hid ? { main: '#9AA0AA', dark: '#6C727C', light: '#C5CAD2' } : COLORS[col];
+    c.save(); c.translate(x, y);
+    c.fillStyle = 'rgba(30,20,50,.2)'; c.beginPath(); c.ellipse(0, th + 4, rx * .98, ry, 0, 0, 6.283); c.fill();
+    c.fillStyle = cc.dark; c.beginPath(); c.ellipse(0, th, rx, ry, 0, 0, 6.283); c.fill();
+    c.fillRect(-rx, 0, rx * 2, th);
+    c.fillStyle = cc.dark; c.beginPath(); c.ellipse(0, th, rx, ry, 0, 0, Math.PI); c.fill();
+    c.fillStyle = cc.main; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, 6.283); c.fill();
+    const g = c.createLinearGradient(0, -ry, 0, ry); g.addColorStop(0, cc.light); g.addColorStop(1, cc.main);
+    c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, 6.283); c.fill();
+    // hole
+    c.fillStyle = '#5B4636'; c.beginPath(); c.ellipse(0, 0, rx * .5, ry * .5, 0, 0, 6.283); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, ry * .12, rx * .5, ry * .36, 0, 0, Math.PI); c.fill();
+    if (hid) { c.fillStyle = '#fff'; c.font = '800 ' + Math.round(rx * .55) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', 0, -ry * 1.05 + 2); }
+    if (o.flash > 0) { c.strokeStyle = 'rgba(255,255,255,' + o.flash + ')'; c.lineWidth = 3; c.beginPath(); c.ellipse(0, 0, rx * (1.1 + (1 - o.flash) * .3), ry * (1.1 + (1 - o.flash) * .3), 0, 0, 6.283); c.stroke(); }
+    c.restore();
+  }
+  function pill(c, x, y, txt, fs, bg, fg) {
+    c.font = '800 ' + fs + 'px ' + FONT; const w = c.measureText(txt).width + 22, h = fs + 12;
+    c.fillStyle = bg; rr(c, x - w / 2, y - h / 2, w, h, h / 2); c.fill(); c.fillStyle = fg; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x, y + 1);
+  }
+  function hintText() {
+    if (G.n === 1) return G.sim.taken === 0 ? 'Chạm vòng trên cùng của cọc' : 'Đủ 3 vòng cùng màu trong khay sẽ nổ';
+    if (G.n === 2) return G.hintT > 6 ? 'Chọn vòng cùng màu để khay không bị đầy' : '';
+    return G.hintT > 14 ? 'Gợi ý: ưu tiên màu đang có 2 vòng trong khay' : '';
+  }
+
+  function render() {
+    const c = G.ctx; if (!c || !G.sim) return;
+    const sc = G.scale, s = G.sim, L = layout();
+    c.setTransform(sc, 0, 0, sc, 0, 0);
+    const bg = c.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#FBE7F1'); bg.addColorStop(1, '#F4D4E6'); c.fillStyle = bg; c.fillRect(0, 0, W, H);
+    if (G.shake > 0) c.translate(Math.sin(G.time * 70) * 4 * Math.min(1, G.shake * 3), 0);
+    // HUD
+    const left = s.pegs.reduce((a, p) => a + p.length, 0);
+    pill(c, 84, 28, 'Còn ' + left + ' vòng', 15, 'rgba(255,255,255,.8)', '#6B3A5E');
+    c.textAlign = 'right'; c.textBaseline = 'middle'; c.font = '800 12px ' + FONT; c.fillStyle = '#9A6688';
+    const lockTxt = ''; c.fillText('Khay ' + s.dock.length + '/' + s.cap, W - 22, 28);
+    // pegs
+    for (let p = 0; p < L.P; p++) {
+      const b = pegBox(p, L), cx = b.x + b.w / 2, base = b.y + b.h - 8, ph = 6 * L.sp + 34;
+      c.fillStyle = 'rgba(80,40,60,.18)'; c.beginPath(); c.ellipse(cx, base + 4, L.rx * 1.02, L.rx * .36, 0, 0, 6.283); c.fill();
+      c.fillStyle = '#C79566'; c.beginPath(); c.ellipse(cx, base - 2, L.rx, L.rx * .36, 0, 0, 6.283); c.fill();
+      c.fillStyle = '#DDB07D'; c.beginPath(); c.ellipse(cx, base - 6, L.rx, L.rx * .36, 0, 0, 6.283); c.fill();
+      c.fillStyle = '#B07E52'; rr(c, cx - 6, base - 6 - ph, 12, ph, 6); c.fill();
+      c.fillStyle = '#D9A877'; rr(c, cx - 6, base - 6 - ph, 5, ph, 3); c.fill();
+    }
+    // rings (bottom-to-top on each peg; moving ones later)
+    const list = []; G.sp.forEach(sp => { if (sp.t) list.push(sp); });
+    list.sort((a, b) => (a.moving ? 1 : 0) - (b.moving ? 1 : 0) || a.y - b.y);
+    // draw pegs' rings from top to bottom visually: lower y later -> need larger y on top? rings lower in stack have larger y, upper rings smaller y; draw by increasing y (upper first), lower ones overlap them -> wrong. draw by decreasing y.
+    list.sort((a, b) => (a.moving ? 1 : 0) - (b.moving ? 1 : 0) || b.y - a.y);
+    list.forEach(sp => { const t = sp.t; ring(c, sp.x, sp.y, sp.rx, t.c, t.h, { sc: sp.sc, flash: sp.flash }); });
+    // locks
+    for (let p = 0; p < L.P; p++) if (s.lock[p] > 0) {
+      const b = pegBox(p, L), cx = b.x + b.w / 2, cy = b.y + b.h - 24 - Math.max(0, s.pegs[p].length - 1) * L.sp / 2 - 4;
+      c.fillStyle = 'rgba(60,40,70,.38)'; rr(c, cx - L.rx - 4, b.y + b.h - 24 - s.pegs[p].length * L.sp - 16, L.rx * 2 + 8, s.pegs[p].length * L.sp + 34, 14); c.fill();
+      c.fillStyle = '#EDE9F5'; rr(c, cx - 15, cy - 8, 30, 22, 6); c.fill();
+      c.strokeStyle = '#EDE9F5'; c.lineWidth = 4; c.beginPath(); c.arc(cx, cy - 8, 9, Math.PI, 0); c.stroke();
+      c.fillStyle = '#5A3F6B'; c.font = '800 16px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(s.lock[p]), cx, cy + 4);
+    }
+    // dock
+    c.fillStyle = 'rgba(80,40,70,.25)'; rr(c, 12, DOCK_Y + 4, 376, DOCK_H, 20); c.fill();
+    c.fillStyle = '#7B4B6E'; rr(c, 12, DOCK_Y, 376, DOCK_H, 20); c.fill();
+    c.fillStyle = '#935F84'; rr(c, 12, DOCK_Y, 376, 12, 6); c.fill();
+    for (let i = 0; i < s.cap; i++) {
+      const q = dockSlot(i), danger = s.dock.length >= s.cap - 1 && i === s.cap - 1;
+      c.fillStyle = danger ? 'rgba(255,90,90,.45)' : 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(q.x, q.y + 3, q.rx + 3, q.rx * .45 + 3, 0, 0, 6.283); c.fill();
+    }
+    // dock rings drawn after slots
+    list.filter(sp => sp.t.dock && !sp.moving).forEach(sp => ring(c, sp.x, sp.y, sp.rx, sp.t.c, 0, { sc: sp.sc }));
+    list.filter(sp => sp.t.dock && sp.moving).forEach(sp => ring(c, sp.x, sp.y, sp.rx, sp.t.c, 0, { sc: sp.sc }));
+    G.dying.forEach(d => { const k = Math.max(0, d.delay) * 3; ring(c, d.sp.x, d.sp.y, d.sp.rx * (1 + (.34 - Math.min(.34, d.delay)) * .5), d.c, 0, { sc: 1 }); });
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.font = '800 11px ' + FONT; c.textAlign = 'center'; c.fillText('KHAY: 3 VÒNG CÙNG MÀU SẼ NỔ', W / 2, DOCK_Y + DOCK_H + 16);
+    const ht = G.phase === 'play' ? hintText() : '';
+    if (ht) pill(c, W / 2, 60, ht, 13, 'rgba(60,30,55,.78)', '#fff');
+    G.parts.forEach(p => { c.globalAlpha = Math.max(0, 1 - p.t / p.life); c.fillStyle = p.c; c.beginPath(); c.arc(p.x, p.y, p.r, 0, 6.283); c.fill(); });
+    c.globalAlpha = 1;
+  }
+
+  function init(o) { G.ctx = o.ctx; G.scale = o.scale || 1; }
+  function setScale(v) { G.scale = v; }
+  return { S, G, Snd, COLORS, MAXN, init, setScale, startLevel, preview, update, render, tap, useBooster, revive, autoplay, levelFor, SEEDS };
+})();
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = Game.S, cv = $('cv'), stage = $('stage');
+  var ICON = {
+    slot: '<ellipse cx="12" cy="14" rx="8" ry="3.6"/><path d="M12 5v6M9 8h6"/>',
+    undo: '<path d="M8.5 7H4V2.5"/><path d="M4.4 7A8.5 8.5 0 1 1 5 15"/>',
+    shuffle: '<path d="M3 7h3.5c4 0 5 10 9 10H20"/><path d="M3 17h3.5c1.6 0 2.8-1.6 3.8-3.4M13.6 9.4C14.4 8 15.4 7 16.5 7H20"/><path d="M17.5 4.5 20 7l-2.5 2.5M17.5 14.5 20 17l-2.5 2.5"/>',
+    magnet: '<path d="M5 4v8a7 7 0 0 0 14 0V4"/><path d="M5 8h4M15 8h4"/>',
+    mystery: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1 1-1.1 1.8"/><path d="M12 17h.01"/>',
+    lock: '<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
+  };
+  var INFO = {
+    slot: ['Thêm ô', 'Thêm ô khay', 'Mở thêm 1 ô cho khay (tối đa 9 ô). Cứu bạn khi khay sắp đầy.'],
+    undo: ['Hoàn tác', 'Hoàn tác', 'Trả vòng vừa lấy về lại cọc.'],
+    mystery: ['', 'Vòng bí ẩn', 'Vòng có dấu ? giấu màu. Nó chỉ lộ màu khi trở thành vòng trên cùng của cọc.'],
+    shuffle: ['Xáo', 'Xáo vòng', 'Xáo lại màu của mọi vòng còn trên các cọc. Vòng trong khay giữ nguyên.'],
+    lock: ['', 'Cọc khóa', 'Cọc có ổ khóa chưa lấy được. Số trên khóa là số lần nổ cần có để mở.'],
+    magnet: ['Nam châm', 'Nam châm', 'Hút một vòng cùng màu với màu đang nhiều nhất trong khay, kể cả khi nó nằm sâu dưới cọc.']
+  };
+  function svg(id) { return '<svg viewBox="0 0 24 24">' + ICON[id] + '</svg>'; }
+
+  var store = { level: 1, best: {}, mute: false, boost: {}, seen: {}, granted: {} };
+  try {
+    try { localStorage.removeItem('ringmatch.v1'); } catch (e) {}
+    var raw = localStorage.getItem('ringmatch.v2');
+    if (raw) { var o = JSON.parse(raw); if (o && typeof o === 'object') {
+      store.level = Math.min(Game.MAXN, Math.max(1, o.level | 0 || 1)); store.best = o.best || {}; store.mute = !!o.mute;
+      store.boost = o.boost || {}; store.seen = o.seen || {}; store.granted = o.granted || {};
+    } }
+  } catch (e) {}
+  function save() { try { localStorage.setItem('ringmatch.v2', JSON.stringify(store)); } catch (e) {} }
+  function cnt(id) { return store.boost[id] | 0; }
+
+  Game.init({ ctx: cv.getContext('2d'), scale: 1 });
+  function fit() {
+    var r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var w = Math.max(200, Math.round(r.width * dpr)), h = Math.round(w * 1.6);
+    if (cv.width !== w) { cv.width = w; cv.height = h; }
+    Game.setScale(w / 400);
+  }
+  fit();
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(stage); else window.addEventListener('resize', fit);
+
+  var toastT = 0;
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 2000);
+  }
+  Game.G.onToast = toast;
+  function showOv(which) { ['ovStart', 'ovWin', 'ovLose', 'ovIntro', 'ovAd'].forEach(function (k) { $(k).hidden = k !== which; }); }
+  function label() { $('lvl').textContent = 'Cấp ' + Game.G.n; }
+  function snd() { $('btnSnd').classList.toggle('off', !Game.Snd.on); }
+  Game.Snd.on = !store.mute; snd();
+
+  var cd = $('cands');
+  Game.COLORS.slice(0, 5).forEach(function (c) { var e = document.createElement('i'); e.style.background = c.main; e.style.borderRadius = '50%'; e.style.width = '26px'; e.style.height = '26px'; cd.appendChild(e); });
+  function fmt(t) { var s = Math.round(t); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+
+  /* ---------------- boosters ---------------- */
+  function unlocked(n) { return S.BOOSTERS.filter(function (id) { return S.INTRO_LEVEL[id] <= n; }); }
+  function grant(n) {
+    unlocked(n).forEach(function (id) { if (!store.granted[id]) { store.granted[id] = true; store.boost[id] = cnt(id) + 2; } });
+  }
+  var btns = {};
+  function buildBoosts(n) {
+    var bar = $('boosts'); bar.innerHTML = ''; btns = {};
+    var ids = unlocked(n);
+    if (!ids.length) {
+      var p = document.createElement('div'); p.style.cssText = 'align-self:center;color:var(--muted);font-weight:700;font-size:13px';
+      p.textContent = 'Booster đầu tiên mở ở cấp ' + S.INTRO_LEVEL.slot; bar.appendChild(p); return;
+    }
+    ids.forEach(function (id) {
+      var b = document.createElement('button'); b.className = 'bst'; b.setAttribute('aria-label', INFO[id][1]); b.title = INFO[id][1];
+      b.innerHTML = svg(id) + '<span class="nm">' + INFO[id][0] + '</span><span class="ct"></span>';
+      b.addEventListener('click', function () { press(id); });
+      bar.appendChild(b); btns[id] = b;
+    });
+    refreshBoosts();
+  }
+  function refreshBoosts() {
+    Object.keys(btns).forEach(function (id) {
+      var b = btns[id], c = cnt(id);
+      b.querySelector('.ct').textContent = c;
+      b.classList.toggle('zero', c <= 0);
+      b.classList.toggle('new', S.INTRO_LEVEL[id] === Game.G.n);
+    });
+  }
+  function press(id) {
+    Game.Snd.init();
+    if (cnt(id) <= 0) { toast('Hết lượt! Thắng cấp để nhận thêm'); return; }
+    var r = Game.useBooster(id);
+    if (r === 'ok') { store.boost[id] = cnt(id) - 1; save(); refreshBoosts(); }
+    else if (r === 'fail') toast(Game.G.failMsg || 'Chưa dùng được');
+  }
+  Game.G.onUse = function (id) { store.boost[id] = cnt(id) - 1; save(); refreshBoosts(); };
+
+  /* ---------------- demo ad (placeholder, no real ad SDK) ---------------- */
+  var adTimer = 0;
+  function fakeAd(prev, done) {
+    showOv('ovAd'); var left = 3; $('adText').textContent = 'Còn ' + left + ' giây… (quảng cáo demo)';
+    clearInterval(adTimer);
+    adTimer = setInterval(function () {
+      left--; if (left > 0) { $('adText').textContent = 'Còn ' + left + ' giây… (quảng cáo demo)'; return; }
+      clearInterval(adTimer); done();
+    }, 1000);
+  }
+
+  /* ---------------- flow ---------------- */
+  function begin(n) { showOv(null); Game.startLevel(n); label(); buildBoosts(n); }
+  function go(n) {
+    Game.Snd.init();
+    n = Math.min(Game.MAXN, Math.max(1, n));
+    grant(n);
+    var key = S.INTROS[n];
+    if (key && !store.seen[n]) {
+      store.seen[n] = true; save();
+      var isB = S.BOOSTERS.indexOf(key) >= 0;
+      $('inTag').textContent = isB ? 'BOOSTER MỚI' : 'CẢN MỚI';
+      $('inTag').className = 'tag' + (isB ? '' : ' ob');
+      $('inIco').innerHTML = svg(key);
+      $('inTitle').textContent = INFO[key][1];
+      $('inText').textContent = INFO[key][2] + (isB ? ' Tặng bạn 2 lượt!' : '');
+      Game.preview(n); label(); buildBoosts(n);
+      $('btnGo').onclick = function () { begin(n); };
+      showOv('ovIntro');
+    } else begin(n);
+  }
+
+  var lastWin = null;
+  Game.G.onEnd = function (status, info) {
+    if (status === 'win') {
+      var best = store.best[info.n];
+      var isBest = !best || info.t < best;
+      if (isBest) store.best[info.n] = Math.round(info.t * 10) / 10;
+      store.level = Math.min(Game.MAXN, Math.max(store.level, info.n + 1));
+      var pool = unlocked(info.n), reward = '', rid = null;
+      if (pool.length) { rid = pool[Math.floor(Math.random() * pool.length)]; store.boost[rid] = cnt(rid) + 1; reward = 'Thưởng: +1 ' + INFO[rid][1]; }
+      lastWin = { id: rid, doubled: false };
+      save(); refreshBoosts();
+      $('winStat').innerHTML = 'Cấp ' + info.n + ' xong sau ' + info.steps + ' lần chạm · ' + fmt(info.t) + '<small>' + (reward || (isBest && best ? 'Kỷ lục mới!' : 'Hoàn thành')) + '</small>';
+      var last = info.n >= Game.MAXN;
+      $('winTitle').textContent = last ? 'Hết bản demo!' : 'Sạch cọc!';
+      $('btnNext').hidden = last;
+      $('btnAdWin').hidden = !rid;
+      $('btnAdWin').disabled = false;
+      showOv('ovWin');
+    } else {
+      $('loseText').textContent = 'Khay đầy mà không có 3 vòng nào cùng màu để nổ.';
+      showOv('ovLose');
+    }
+  };
+
+  $('btnPlay').addEventListener('click', function () { go(store.level); });
+  $('btnNext').addEventListener('click', function () { go(Game.G.n + 1); });
+  $('btnAgain').addEventListener('click', function () { go(Game.G.n); });
+  $('btnRetry').addEventListener('click', function () { go(Game.G.n); });
+  $('btnAdLose').addEventListener('click', function () { fakeAd('lose', function () { showOv(null); Game.revive(); }); });
+  $('btnAdWin').addEventListener('click', function () {
+    if (!lastWin || !lastWin.id || lastWin.doubled) return;
+    fakeAd('win', function () { lastWin.doubled = true; store.boost[lastWin.id] = cnt(lastWin.id) + 1; save(); refreshBoosts(); showOv('ovWin'); $('btnAdWin').hidden = true; toast('Đã nhận thêm +1 ' + INFO[lastWin.id][1] + ' (demo)'); });
+  });
+  $('btnRe').addEventListener('click', function () { Game.Snd.init(); begin(Game.G.n); });
+  $('btnSnd').addEventListener('click', function () {
+    Game.Snd.init(); Game.Snd.on = !Game.Snd.on; store.mute = !Game.Snd.on; save(); snd();
+    if (Game.Snd.on) Game.Snd.pick();
+  });
+  function setStart(n) {
+    store.level = n; save();
+    $('lvOut').textContent = 'Cấp ' + n;
+    $('btnPlay').textContent = n > 1 ? 'Chơi — cấp ' + n : 'Chơi';
+    Game.preview(n); label(); buildBoosts(n);
+  }
+  $('lvMinus').addEventListener('click', function () { setStart(Math.max(1, store.level - 1)); });
+  $('lvPlus').addEventListener('click', function () { setStart(Math.min(Game.MAXN, store.level + 1)); });
+
+  cv.addEventListener('pointerdown', function (e) {
+    Game.Snd.init();
+    var r = cv.getBoundingClientRect();
+    Game.tap((e.clientX - r.left) / r.width * 400, (e.clientY - r.top) / r.height * 640);
+    e.preventDefault();
+  });
+
+  setStart(store.level); showOv('ovStart');
+
+  var last = performance.now();
+  function frame(now) {
+    var dt = (now - last) / 1000; last = now;
+    Game.update(dt); Game.render();
+    
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__game = Game;
+})();
+
+</script>
+
+</body></html>

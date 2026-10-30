@@ -1,0 +1,1143 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Garage Defense</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap">
+<style>
+:root{
+  --bg:#EEF3E4; --fg:#2B3A2E; --muted:#6F7F70; --card:#FFFFFF; --line:#D9E3C8;
+  --accent:#F08029; --accent-fg:#FFFFFF; --accent-2:#5B6B86; --chip:#FFFFFF;
+  --warn:#F0A02E; --heart:#FF4F6A; --leaf:#F2B01E; --sky:#3F8CFF;
+  --scrim:rgba(30,40,30,.45); --shadow:0 12px 30px rgba(70,90,50,.22);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#171D18; --fg:#EAF2E2; --muted:#9FB09F; --card:#232C25; --line:#3A483C;
+  --accent:#FF9A4A; --accent-fg:#2B1600; --accent-2:#9AAAC6; --chip:#232C25;
+  --warn:#FFB84A; --heart:#FF6F86; --leaf:#FFC94D; --sky:#6DA8FF;
+  --scrim:rgba(5,10,6,.62); --shadow:0 12px 30px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171D18; --fg:#EAF2E2; --muted:#9FB09F; --card:#232C25; --line:#3A483C;
+  --accent:#FF9A4A; --accent-fg:#2B1600; --accent-2:#9AAAC6; --chip:#232C25;
+  --warn:#FFB84A; --heart:#FF6F86; --leaf:#FFC94D; --sky:#6DA8FF;
+  --scrim:rgba(5,10,6,.62); --shadow:0 12px 30px rgba(0,0,0,.45); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Baloo 2','Nunito',system-ui,'Segoe UI',sans-serif;
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.app{width:min(100%,440px);margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.bar{display:flex;align-items:center;gap:8px;min-width:0}
+.brand{display:none}
+.lvl{margin-right:auto}
+.lvl{font-weight:800;font-size:14px;background:var(--chip);border:2px solid var(--line);border-radius:999px;padding:1px 12px;color:var(--fg);white-space:nowrap}
+.leafchip{display:flex;align-items:center;gap:5px;font-weight:800;font-size:15px;background:var(--chip);border:2px solid var(--line);border-radius:999px;padding:1px 11px 1px 7px;color:var(--fg)}
+.leafchip svg{width:18px;height:18px}
+.ib{width:36px;height:36px;border-radius:12px;border:2px solid var(--line);background:var(--chip);color:var(--accent-2);display:grid;place-items:center;cursor:pointer;padding:0}
+.ib:active{transform:scale(.94)}
+.ib svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ib.off .wave{display:none}.ib:not(.off) .cross{display:none}
+
+.stagewrap{width:min(100%,calc((100vh - 190px)*.625));width:min(100%,calc((100dvh - 190px)*.625));min-width:260px;margin:0 auto}
+.stage{position:relative;border-radius:26px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:400/640;background:#9ACB6A;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas{display:block;width:100%;height:100%}
+.ov{position:absolute;inset:0;display:grid;place-items:center;background:var(--scrim);padding:16px;backdrop-filter:blur(2px);overflow:auto}
+.card{background:var(--card);color:var(--fg);border-radius:24px;padding:20px 18px 18px;width:100%;max-width:330px;text-align:center;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:11px;animation:pop .28s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.card h1,.card h2{margin:0;font-size:29px;line-height:1.05;color:var(--accent);font-weight:800;text-wrap:balance}
+.card p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.35;text-wrap:balance}
+.rules{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;text-align:left}
+.rules li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.3;font-weight:600}
+.rules b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-size:13px;font-weight:800}
+.btn{font:inherit;font-weight:800;font-size:18px;border:0;border-radius:16px;padding:9px 16px;cursor:pointer;background:var(--accent);color:var(--accent-fg);box-shadow:0 5px 0 rgba(0,0,0,.17)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.17)}
+.btn:disabled{opacity:.45;box-shadow:none;cursor:default}
+.btn.sec{background:transparent;color:var(--accent-2);box-shadow:none;border:2px solid var(--line);font-size:15px;padding:6px 12px}
+.btn.ad{background:var(--sky);color:#fff;font-size:15px}
+.btn.sm{font-size:15px;padding:6px 12px;border-radius:13px}
+.row{display:flex;gap:8px;flex-direction:column}
+.stat{font-size:15px;font-weight:700}
+.stat small{display:block;font-size:12.5px;color:var(--muted);font-weight:600}
+.demo{font-size:11px;font-weight:700;opacity:.8}
+.faces{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.faces img{width:56px;height:56px}
+.faces.big img{width:76px;height:76px}
+
+.boosts{display:flex;gap:5px;justify-content:center;min-height:54px;padding-top:6px}
+.bst{position:relative;flex:1 1 0;min-width:0;max-width:54px;height:52px;border-radius:15px;border:2px solid var(--line);background:var(--chip);color:var(--accent-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;padding:0;font:inherit}
+.bst svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.bst .nm{font-size:10px;font-weight:800;line-height:1;color:var(--muted);white-space:nowrap}
+.bst .ct{position:absolute;top:-7px;right:-5px;min-width:19px;height:19px;border-radius:10px;background:var(--accent);color:var(--accent-fg);font-size:12px;font-weight:800;display:grid;place-items:center;padding:0 4px}
+.bst.zero{opacity:.62}.bst.zero .ct{background:var(--muted);color:var(--card)}
+.bst.on{background:var(--accent-2);color:var(--card);border-color:var(--accent-2)}.bst.on .nm{color:var(--card)}
+.bst.new{animation:glow 1.2s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 5px rgba(240,128,41,.3)}}
+.bst:active{transform:scale(.94)}
+.tabs{display:flex;gap:8px;margin-top:2px}
+.tab{flex:1;font:inherit;font-weight:800;font-size:16px;border:2px solid var(--line);background:var(--chip);color:var(--muted);border-radius:16px;padding:6px 10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.tab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.tab i{font-style:normal;background:var(--heart);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;min-width:16px}
+.toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:var(--fg);color:var(--bg);font-weight:800;font-size:14px;padding:6px 14px;border-radius:999px;max-width:92%;text-align:center;pointer-events:none;box-shadow:var(--shadow);z-index:3}
+.tag{display:inline-block;align-self:center;font-size:12px;font-weight:800;letter-spacing:.08em;padding:2px 12px;border-radius:999px;background:var(--accent);color:var(--accent-fg)}
+.tag.ob{background:var(--warn);color:#2b1a00}
+.bigico{align-self:center;width:72px;height:72px;border-radius:22px;background:var(--bg);border:2px solid var(--line);display:grid;place-items:center;color:var(--accent-2)}
+.bigico svg{width:40px;height:40px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.jump{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-weight:700;font-size:14px}
+.jump button{width:30px;height:30px;border-radius:10px;border:2px solid var(--line);background:var(--chip);color:var(--accent-2);font:inherit;font-weight:800;cursor:pointer;padding:0}
+.jump output{min-width:64px;color:var(--fg);font-weight:800}
+.perkline{font-size:13px;font-weight:700;color:var(--fg);background:var(--bg);border-radius:12px;padding:6px 10px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.perkline span{display:flex;gap:6px;align-items:center}
+.perkline img{width:22px;height:22px}
+
+/* zoo */
+.zoo{display:flex;flex-direction:column;gap:12px;padding-bottom:14px}
+.panel{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.panel h3{margin:0;font-size:16px;font-weight:800;color:var(--accent-2);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.panel h3 small{font-size:12px;color:var(--muted);font-weight:700}
+.income{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.income .t{font-weight:700;font-size:14px;line-height:1.2}
+.income .t b{font-size:20px;color:var(--leaf);font-weight:800}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{border:2px dashed var(--line);border-radius:16px;padding:8px 4px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--muted);min-height:108px;justify-content:center;cursor:pointer;background:transparent;font-family:inherit;min-width:0}
+.slot.f{border-style:solid;background:var(--bg);color:var(--fg)}
+.slot img{width:50px;height:50px}
+.slot .pk{font-size:11px;line-height:1.15;color:var(--accent-2)}
+.slot.lock{opacity:.6;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.an{border:2px solid var(--line);background:var(--bg);border-radius:16px;padding:6px 4px 8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;font:inherit;color:var(--fg);min-width:0}
+.an img{width:62px;height:62px}
+.an b{font-size:13px;line-height:1.1;font-weight:800}
+.an small{font-size:11px;color:var(--muted);font-weight:700;line-height:1.1}
+.an.lk{opacity:.7;cursor:default}
+.stars{color:#F2B21B;letter-spacing:1px;font-size:13px;line-height:1}
+.stars .off{color:var(--line)}
+.sheet{position:fixed;inset:0;z-index:20;background:var(--scrim);display:grid;align-items:end;justify-items:center;padding-inline:max(12px,env(safe-area-inset-left,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet .card{max-width:440px;border-radius:26px 26px 0 0;padding-bottom:max(18px,env(safe-area-inset-bottom,0px))}
+.sheet img.hero{width:130px;height:130px;align-self:center}
+.sheet h2{font-size:26px}
+.kv{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--bg);border-radius:14px;padding:8px 12px;font-weight:700;font-size:14px}
+.kv span small{color:var(--muted);font-weight:700}
+.cartypes{display:flex;gap:10px;justify-content:center}
+.ct{flex:1;background:var(--bg);border-radius:16px;padding:8px 6px;text-align:center;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ct img{width:84px;height:84px}
+.ct small{color:var(--muted);font-weight:700;font-size:12px}
+.up{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:16px;padding:8px 10px}
+.up img{width:52px;height:52px;flex:none}
+.up .tx{flex:1;min-width:0;font-weight:800;font-size:14.5px;line-height:1.15}
+.up .tx small{display:block;color:var(--muted);font-weight:700;font-size:12px;margin-top:2px}
+.up .pips{display:flex;gap:3px;margin-top:4px}
+.up .pips i{width:14px;height:6px;border-radius:3px;background:var(--line)}
+.up .pips i.on{background:var(--accent)}
+.up .btn{white-space:nowrap}
+.legend{display:flex;gap:6px;justify-content:center}
+.legend i{width:16px;height:16px;border-radius:50%;display:block;border:2px solid rgba(0,0,0,.2)}
+</style>
+
+<main class="app">
+  <header class="bar">
+    <div class="brand">Garage Defense</div>
+    <div class="lvl" id="lvl">Cấp 1</div>
+    <div class="leafchip" title="Xu"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="var(--leaf)" stroke="#a87100" stroke-width="1.8"/><path d="M12 7v10M9.5 9.5h4a1.8 1.8 0 0 1 0 3.5h-3a1.8 1.8 0 0 0 0 3.5h4" fill="none" stroke="#a87100" stroke-width="1.6" stroke-linecap="round"/></svg><span id="coins">0</span></div>
+    <button class="ib" id="btnSnd" aria-label="Bật/tắt âm thanh" title="Âm thanh">
+      <svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wave" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="cross" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+    </button>
+    <button class="ib" id="btnRe" aria-label="Chơi lại cấp này" title="Chơi lại">
+      <svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.4-5.5"/><path d="M19.5 4.5v4h-4"/></svg>
+    </button>
+  </header>
+
+  <section id="paneGame">
+    <div class="stagewrap">
+      <div class="stage" id="stage">
+        <canvas id="cv" width="800" height="1280"></canvas>
+        <div class="toast" id="toast" hidden></div>
+
+        <div class="ov" id="ovStart">
+          <div class="card">
+            <div class="faces" id="startCars"></div>
+            <h1>Garage Defense</h1>
+            <ul class="rules">
+              <li><b>1</b><span>Chạm xe có đường thoáng, xe lái lên ô đỗ và tự bắn.</span></li>
+              <li><b>2</b><span>Xe chỉ bắn zombie <u>cùng màu</u> với áo. Xe to nhiều đạn hơn xe con.</span></li>
+              <li><b>3</b><span>Zombie chạm vạch mất 1 tim. Hết 5 tim là thua. Xe đang chờ màu (zZ) chạm vào để đưa về bãi.</span></li>
+            </ul>
+            <div class="perkline" id="startPerks" hidden></div>
+            <button class="btn" id="btnPlay">Chơi</button>
+            <div class="jump" title="Nhảy tới cấp để xem từng zombie/booster"><span>Nhảy tới</span><button id="lvMinus" aria-label="Giảm cấp">−</button><output id="lvOut">Cấp 1</output><button id="lvPlus" aria-label="Tăng cấp">+</button></div>
+          </div>
+        </div>
+
+        <div class="ov" id="ovWin" hidden>
+          <div class="card">
+            <h2>Giữ vững tuyến!</h2>
+            <div class="faces big" id="winFaces"></div>
+            <div class="stat" id="winStat"></div>
+            <div class="row">
+              <button class="btn" id="btnNext">Cấp tiếp theo</button>
+              <button class="btn ad sm" id="btnDouble">x2 xu · xem quảng cáo <span class="demo">(demo)</span></button>
+              <button class="btn sec" id="btnWinZoo">Vào gara</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ov" id="ovIntro" hidden>
+          <div class="card">
+            <span class="tag" id="inTag">BOOSTER MỚI</span>
+            <div class="bigico" id="inIco"></div>
+            <h2 id="inTitle"></h2>
+            <p id="inText"></p>
+            <button class="btn" id="btnGo">Bắt đầu</button>
+          </div>
+        </div>
+
+        <div class="ov" id="ovLose" hidden>
+          <div class="card">
+            <h2>Tuyến thất thủ!</h2>
+            <p>Zombie đã tràn qua vạch. Thử lại hoặc nhận thêm tim để chơi tiếp ngay.</p>
+            <div class="row">
+              <button class="btn ad" id="btnRevive">+2 tim · xem quảng cáo <span class="demo">(demo)</span></button>
+              <button class="btn" id="btnRetry">Chơi lại</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ov" id="ovBuy" hidden>
+          <div class="card">
+            <div class="bigico" id="buyIco"></div>
+            <h2 id="buyTitle">Hết lượt</h2>
+            <p id="buyText"></p>
+            <div class="row">
+              <button class="btn" id="btnBuy">Mua 1 · 40 xu</button>
+              <button class="btn ad sm" id="btnFreeBoost">Nhận 1 · xem quảng cáo <span class="demo">(demo)</span></button>
+              <button class="btn sec" id="btnBuyX">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="boosts" id="boosts"></div>
+  </section>
+
+  <section id="paneZoo" class="zoo" hidden>
+    <div class="panel">
+      <h3>Gara <small>nâng cấp áp dụng cho mọi cấp</small></h3>
+      <div class="cartypes" id="carTypes"></div>
+    </div>
+    <div class="panel" id="upList"></div>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab on" id="tabPlay">Chơi</button>
+    <button class="tab" id="tabZoo">Gara</button>
+  </nav>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="card" id="sheetCard"></div>
+</div>
+
+<script>
+/* Garage Defense — pure simulation (no rendering). Lot of directional cars + zombie lane + coloured ammo. */
+const BusSim = (function () {
+  const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1];   // 0 right, 1 down, 2 left, 3 up
+  const FIELD = { x0: 24, x1: 376, spawnY: 74, lineY: 262 };
+  const AMMO_SMALL = 6, AMMO_BIG = 12;
+  const INTROS = { 4: 'freeze', 7: 'runner', 10: 'rainbow', 13: 'tank', 16: 'bomb', 19: 'cone', 22: 'ammo', 25: 'heart', 28: 'slot', 31: 'boss' };
+  const BOOSTERS = ['freeze', 'rainbow', 'bomb', 'ammo', 'heart', 'slot'];
+  const INTRO_LEVEL = {}; Object.keys(INTROS).forEach(k => { INTRO_LEVEL[INTROS[k]] = +k; });
+  const PHASE_OFF = [0, 1.0, 2.2], TIER_STEP = 0.8, TIER_CAP = 5;
+  function phaseOf(n) { return (n - 1) % 3; }
+  function diff(n) { return Math.min(TIER_CAP, Math.floor((n - 1) / 3)) * TIER_STEP + PHASE_OFF[phaseOf(n)]; }
+  function rng(seed) {
+    let a = seed >>> 0;
+    return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const HP = { normal: 1, runner: 1, tank: 3, boss: 12 };
+  const SPD = { normal: 1, runner: 1.9, tank: 0.7, boss: 0.5 };
+
+  // hand-tuned onboarding: level 1 = ONE car, ONE colour, ONE row; level 2 = two colours; level 3 = first blocked cars
+  const TUTORIAL = {
+    1: { nColors: 1, perRow: 4, rows: 1, waveRows: 1, slack: 1.3 },
+    2: { nColors: 2, perRow: 6, rows: 2, waveRows: 2, slack: 1.0 },
+    3: { nColors: 2, perRow: 8, rows: 3, waveRows: 2, slack: 1.5 }
+  };
+  function levelParams(n) {
+    const ph = phaseOf(n), D = diff(n) * (0.6 + 0.4 * Math.min(1, (n - 1) / 12));   // gentler first 12 levels
+    const E = Math.max(0, (16 - n) / 15);              // "ease-in": 1 at level 1 → 0 at level 16
+    const speed = (11 + D * 1.15) - 3.2 * E;
+    const P0 = {
+      D: D, phase: ph, n: n,
+      nColors: n < 4 ? 2 : n < 13 ? 3 : n < 22 ? 4 : 5,
+      perRow: D < 1.5 ? 8 : 10,
+      rows: Math.max(3, Math.round(4 + D * 1.55 - 2.2 * E)),
+      waveRows: 2 + Math.floor(D / 1.6),
+      speed: speed,
+      rowGap: 36 / speed,
+      pause: 36 / speed,                                 // continuous stream: waves are only colour blocks, no waiting
+      slack: 1.7 - 0.045 * D + 0.9 * E,
+      pBig: Math.min(.5, .22 + .04 * D),
+      slots: 4,
+      cones: n >= INTRO_LEVEL.cone ? (ph === 2 ? 3 : ph === 1 ? 2 : (n === INTRO_LEVEL.cone ? 1 : 0)) : 0,
+      runner: n >= INTRO_LEVEL.runner ? (ph === 0 ? (n === INTRO_LEVEL.runner ? 0.06 : 0.03) : 0.06) : 0,
+      tank: n >= INTRO_LEVEL.tank ? (ph === 0 ? (n === INTRO_LEVEL.tank ? 0.07 : 0.03) : 0.07) : 0,
+      boss: n >= INTRO_LEVEL.boss && ph === 2 ? 1 : 0
+    };
+    return TUTORIAL[n] ? Object.assign(P0, TUTORIAL[n]) : P0;
+  }
+
+  /* ----------------------------------------------------------------- lot */
+  function Lot(level) {
+    this.cols = level.cols; this.rows = level.rows;
+    this.cars = level.cars.map(c => ({ id: c.id, color: c.color, len: c.len, c: c.c, r: c.r, dir: c.dir, ammo: c.ammo, max: c.ammo, state: 'lot', slot: -1, t: 0, cd: 0, idle: 0, bullets: 0 }));
+    this.byId = {}; this.cars.forEach(c => { this.byId[c.id] = c; });
+    this.occ = []; this.cone = [];
+    for (let r = 0; r < this.rows; r++) { this.occ.push(new Array(this.cols).fill(0)); this.cone.push(new Array(this.cols).fill(false)); }
+    this.cars.forEach(c => cellsOf(c).forEach(q => { this.occ[q[1]][q[0]] = c.id; }));
+    level.cones.forEach(q => { this.cone[q[1]][q[0]] = true; });
+  }
+  function cellsOf(c) {
+    const out = [], horiz = c.dir === 0 || c.dir === 2;
+    for (let i = 0; i < c.len; i++) out.push(horiz ? [c.c + i, c.r] : [c.c, c.r + i]);
+    return out;
+  }
+  function frontOf(c) { const cs = cellsOf(c); return (c.dir === 0 || c.dir === 1) ? cs[cs.length - 1] : cs[0]; }
+  Lot.prototype.ray = function (c) {
+    const f = frontOf(c), out = []; let x = f[0] + DX[c.dir], y = f[1] + DY[c.dir];
+    while (x >= 0 && y >= 0 && x < this.cols && y < this.rows) { out.push([x, y]); x += DX[c.dir]; y += DY[c.dir]; }
+    return out;
+  };
+  Lot.prototype.blocker = function (c) {
+    const f = frontOf(c); let x = f[0] + DX[c.dir], y = f[1] + DY[c.dir];
+    while (x >= 0 && y >= 0 && x < this.cols && y < this.rows) {
+      const o = this.occ[y][x]; if (o && o !== c.id) return { k: 'car', id: o };
+      if (this.cone[y][x]) return { k: 'cone', x: x, y: y };
+      x += DX[c.dir]; y += DY[c.dir];
+    }
+    return null;
+  };
+  Lot.prototype.removeCar = function (c) {
+    const melted = [];
+    cellsOf(c).forEach(q => { this.occ[q[1]][q[0]] = 0; });
+    cellsOf(c).forEach(q => { for (let d = 0; d < 4; d++) { const x = q[0] + DX[d], y = q[1] + DY[d]; if (x >= 0 && y >= 0 && x < this.cols && y < this.rows && this.cone[y][x]) { this.cone[y][x] = false; melted.push([x, y]); } } });
+    return melted;
+  };
+  function lotSolvable(level) {
+    const L = new Lot(level); let prog = true;
+    while (prog) { prog = false; L.cars.forEach(c => { if (c.state === 'lot' && !L.blocker(c)) { c.state = 'gone'; L.removeCar(c); prog = true; } }); }
+    return L.cars.every(c => c.state === 'gone');
+  }
+
+  /* ----------------------------------------------------------- generator */
+  function generate(n, seed) {
+    const P = levelParams(n), R = rng(seed * 7919 + n * 104729);
+    // 1. zombie schedule: marching rows, colour blocks that span a whole wave of rows
+    const zs = [], colorsHP = new Array(P.nColors).fill(0), C = P.perRow, colW = (FIELD.x1 - FIELD.x0) / C;
+    let t = 0.8, id = 0, rowsMade = 0, lastCol = -1;
+    while (rowsMade < P.rows) {
+      const k = Math.min(P.rows - rowsMade, 1 + Math.floor(R() * P.waveRows) + (P.waveRows > 2 ? 1 : 0));
+      // split columns into 2-3 segments
+      const nSeg = C <= 8 ? 2 : (R() < .5 ? 2 : 3), cuts = [0];
+      for (let i = 1; i < nSeg; i++) { let c = Math.round(C * i / nSeg + (R() - .5) * 2); c = Math.max(cuts[cuts.length - 1] + 2, Math.min(C - 2 * (nSeg - i), c)); cuts.push(c); }
+      cuts.push(C);
+      const segCol = [];
+      for (let i = 0; i < nSeg; i++) { let c, g = 0; do { c = Math.floor(R() * P.nColors); } while ((c === lastCol || (i > 0 && c === segCol[i - 1])) && P.nColors > 1 && g++ < 20); segCol.push(c); lastCol = c; }
+      for (let r = 0; r < k; r++) {
+        const rowT = t + r * P.rowGap, isLast = rowsMade + r === P.rows - 1;
+        for (let i = 0; i < C; i++) {
+          let seg = 0; while (i >= cuts[seg + 1]) seg++;
+          const col = segCol[seg]; let type = 'normal'; const rr = R();
+          if (P.boss && isLast && i === Math.floor(C / 2)) type = 'boss';
+          else if (P.boss && isLast && Math.abs(i - Math.floor(C / 2)) === 1) continue;
+          else if (rr < P.tank) type = 'tank'; else if (rr < P.tank + P.runner) type = 'runner';
+          const x = FIELD.x0 + colW * (i + .5);
+          zs.push({ id: ++id, t: rowT, color: col, type: type, x: x, hp: HP[type] });
+          colorsHP[col] += HP[type];
+        }
+      }
+      rowsMade += k; t += (k - 1) * P.rowGap + P.pause;
+    }
+    // 2. cars: total ammo of a colour == total zombie HP of that colour (no spare bullets); last car takes the remainder
+    const cars = []; let cid = 0;
+    for (let c = 0; c < P.nColors; c++) {
+      let need = colorsHP[c];
+      while (need > 0) {
+        let big = false, a;
+        if (need >= AMMO_BIG && R() < P.pBig) { big = true; a = AMMO_BIG; }
+        else if (need > AMMO_BIG) a = AMMO_SMALL;
+        else if (need > AMMO_SMALL) { if (R() < .5) { big = true; a = need; } else a = Math.ceil(need / 2); }
+        else a = need;
+        cars.push({ id: ++cid, color: c, len: big ? 3 : 2, ammo: a });
+        need -= a;
+      }
+    }
+    for (let i = cars.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const tmp = cars[i]; cars[i] = cars[j]; cars[j] = tmp; }
+    // 3. lot size
+    let T = 0; cars.forEach(c => { T += c.len; });
+    const fill = Math.min(.74, .5 + .035 * P.D), cells = Math.ceil(T / fill);
+    const minC = n <= 2 ? 5 : n === 3 ? 6 : 7, minR = n <= 2 ? 5 : 6;
+    let cols = Math.max(minC, Math.min(13, Math.round(Math.sqrt(cells * 1.35)))), rows = Math.max(minR, Math.min(10, Math.ceil(cells / cols)));
+    while (cols * rows < T / .86 && (cols < 13 || rows < 10)) { if (cols < 13) cols++; else rows++; }
+    const occ = []; for (let r = 0; r < rows; r++) occ.push(new Array(cols).fill(0));
+    const placed = [];
+    function rayCells(c) { const f = frontOf(c), out = []; let x = f[0] + DX[c.dir], y = f[1] + DY[c.dir]; while (x >= 0 && y >= 0 && x < cols && y < rows) { out.push([x, y]); x += DX[c.dir]; y += DY[c.dir]; } return out; }
+    const placedCars = [];
+    for (let i = 0; i < cars.length; i++) {
+      const c = cars[i]; let best = null, bs = -1e9;
+      for (let k = 0; k < 90; k++) {
+        const dir = Math.floor(R() * 4), horiz = dir === 0 || dir === 2;
+        const cc = Math.floor(R() * (cols - (horiz ? c.len - 1 : 0))), rr = Math.floor(R() * (rows - (horiz ? 0 : c.len - 1)));
+        const cand = { len: c.len, c: cc, r: rr, dir: dir };
+        const cs = cellsOf(cand);
+        if (cs.some(q => occ[q[1]][q[0]])) continue;
+        const ray = rayCells(cand);
+        if (ray.some(q => occ[q[1]][q[0]] || cs.some(z => z[0] === q[0] && z[1] === q[1]))) continue;
+        let score = R() * .8;
+        placedCars.forEach(o => { const rc = rayCells(o); let hit = -1; for (let j = 0; j < rc.length && hit < 0; j++) if (cs.some(z => z[0] === rc[j][0] && z[1] === rc[j][1])) hit = j + 1; if (hit > 0) score += (hit >= 3 ? 2.2 : hit === 2 ? 1.2 : .6) * (o.nb ? 1 : 2); });
+        const mid = cs[Math.floor(cs.length / 2)], depth = Math.min(mid[0], mid[1], cols - 1 - mid[0], rows - 1 - mid[1]);
+        score += depth * 0.35 * (1 - i / cars.length);
+        if (score > bs) { bs = score; best = cand; }
+      }
+      if (!best) return null;
+      placedCars.forEach(o => { const rc = rayCells(o); if (rc.some(q => cellsOf(best).some(z => z[0] === q[0] && z[1] === q[1]))) o.nb = (o.nb || 0) + 1; });
+      const pc = { id: c.id, color: c.color, len: c.len, ammo: c.ammo, c: best.c, r: best.r, dir: best.dir };
+      cellsOf(pc).forEach(q => { occ[q[1]][q[0]] = c.id; });
+      placedCars.push(pc);
+    }
+    const level = { n: n, seed: seed, params: P, cols: cols, rows: rows, cars: placedCars.map(o => ({ id: o.id, color: o.color, len: o.len, ammo: o.ammo, c: o.c, r: o.r, dir: o.dir })), cones: [], zombies: zs, hpByColor: colorsHP, intro: INTROS[n] || null };
+    // cones on empty cells that lie on rays
+    if (P.cones) {
+      const spots = [];
+      level.cars.forEach(c => { rayCells(c).forEach(q => { if (!occ[q[1]][q[0]]) spots.push(q); }); });
+      for (let i = spots.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const tmp = spots[i]; spots[i] = spots[j]; spots[j] = tmp; }
+      for (let i = 0; i < spots.length && level.cones.length < P.cones; i++) {
+        const q = spots[i]; if (level.cones.some(z => z[0] === q[0] && z[1] === q[1])) continue;
+        level.cones.push(q); if (!lotSolvable(level)) level.cones.pop();
+      }
+    }
+    return level;
+  }
+
+  /* -------------------------------------------------------------- battle */
+  function Battle(level, o) {
+    o = o || {};
+    this.level = level; this.P = level.params; this.lot = new Lot(level);
+    this.ammoS = AMMO_SMALL + (o.ammoSmall || 0); this.ammoB = AMMO_BIG + (o.ammoBig || 0);
+    this.lot.cars.forEach(c => { const a = c.ammo + (c.len === 3 ? (o.ammoBig || 0) : (o.ammoSmall || 0)); c.ammo = a; c.max = a; });
+    this.fireMul = o.fireMul || 1;
+    this.maxHearts = 5 + (o.hearts || 0); this.hearts = this.maxHearts;
+    this.slotsN = this.P.slots + (o.slots || 0); this.slotCar = new Array(this.slotsN + 1).fill(0);  // +1 extra slot for booster
+    this.extraSlot = false;
+    this.t = 0; this.status = 'play'; this.idx = 0; this.zombies = []; this.bullets = []; this.ev = []; this.frozen = 0;
+    this.kills = 0; this.leaks = 0; this.byZ = {};
+  }
+  Battle.prototype.usableSlots = function () { return this.slotsN + (this.extraSlot ? 1 : 0); };
+  Battle.prototype.freeSlot = function () { const n = this.usableSlots(); for (let i = 0; i < n; i++) if (!this.slotCar[i]) return i; return -1; };
+  Battle.prototype.tapCar = function (id) {
+    const c = this.lot.byId[id]; if (!c || c.state !== 'lot' || this.status !== 'play') return null;
+    const by = this.lot.blocker(c); if (by) return { t: 'blocked', car: c, by: by };
+    const s = this.freeSlot(); if (s < 0) return { t: 'full', car: c };
+    const melted = this.lot.removeCar(c);
+    c.state = 'driving'; c.slot = s; c.t = 0.62; c.cd = 0.15; this.slotCar[s] = c.id;
+    return { t: 'go', car: c, melted: melted };
+  };
+  Battle.prototype.step = function (dt) {
+    if (this.status !== 'play') return;
+    this.t += dt;
+    const sched = this.level.zombies;
+    while (this.idx < sched.length && sched[this.idx].t <= this.t) {
+      const s = sched[this.idx++];
+      this.zombies.push({ id: s.id, color: s.color, type: s.type, x: s.x, y: FIELD.spawnY, hp: s.hp, max: s.hp, pend: 0, ph: (s.id * 1.7) % 6.28, hit: 0 });
+      this.byZ[s.id] = this.zombies[this.zombies.length - 1];
+    }
+    if (this.frozen > 0) this.frozen -= dt;
+    for (let i = this.zombies.length - 1; i >= 0; i--) {
+      const z = this.zombies[i]; if (z.hit > 0) z.hit -= dt;
+      if (this.frozen <= 0) z.y += this.P.speed * SPD[z.type] * dt;
+      if (z.y >= FIELD.lineY) {
+        this.zombies.splice(i, 1); this.hearts--; this.leaks++; this.ev.push({ k: 'leak', x: z.x, y: FIELD.lineY, z: z });
+        if (this.hearts <= 0) { this.status = 'lost'; this.ev.push({ k: 'lose' }); return; }
+      }
+    }
+    // cars
+    this.lot.cars.forEach(c => {
+      if (c.state === 'driving') { c.t -= dt; if (c.t <= 0) { c.state = 'slot'; c.idle = 0; this.ev.push({ k: 'arrive', car: c }); } }
+      else if (c.state === 'returning') { c.t -= dt; if (c.t <= 0) { c.state = 'lot'; c.slot = -1; } }
+      else if (c.state === 'slot') {
+        c.cd -= dt;
+        if (c.ammo > 0) {
+          if (c.cd <= 0) {
+            let tg = null;
+            for (let i = 0; i < this.zombies.length; i++) { const z = this.zombies[i]; if ((c.wild || z.color === c.color) && z.hp - z.pend > 0 && (!tg || z.y > tg.y)) tg = z; }
+            if (tg) {
+              c.ammo--; c.bullets++; tg.pend++; c.cd = 1 / ((c.len === 3 ? 4.6 : 3.2) * this.fireMul); c.idle = 0;
+              this.bullets.push({ z: tg, car: c, t: 0.13 }); this.ev.push({ k: 'shot', car: c, z: tg });
+            } else c.idle += dt;
+          }
+        } else if (c.bullets === 0) { c.leaveT = (c.leaveT || 0.4) - dt; if (c.leaveT <= 0) this.releaseSlot(c, 'done'); }
+      }
+    });
+    for (let i = this.bullets.length - 1; i >= 0; i--) {
+      const b = this.bullets[i]; b.t -= dt;
+      if (b.t <= 0) {
+        this.bullets.splice(i, 1); b.car.bullets--; const z = b.z; z.pend--;
+        if (z.hp > 0) { z.hp--; z.hit = 0.12; this.ev.push({ k: 'hit', z: z, car: b.car }); if (z.hp <= 0) { this.kills++; const zi = this.zombies.indexOf(z); if (zi >= 0) this.zombies.splice(zi, 1); this.ev.push({ k: 'kill', z: z }); } }
+      }
+    }
+    if (this.idx >= sched.length && !this.zombies.length && !this.bullets.length) { this.status = 'won'; this.ev.push({ k: 'win' }); }
+  };
+  Battle.prototype.releaseSlot = function (c, why) { c.state = 'gone'; this.slotCar[c.slot] = 0; this.ev.push({ k: 'leave', car: c, why: why }); c.leaveT = 0; };
+  Battle.prototype.hasTarget = function (c) { for (let i = 0; i < this.zombies.length; i++) { const z = this.zombies[i]; if ((c.wild || z.color === c.color) && z.hp - z.pend > 0) return true; } return false; };
+  Battle.prototype.returnCar = function (slot) {
+    const id = this.slotCar[slot], c = id && this.lot.byId[id];
+    if (!c || c.state !== 'slot' || c.bullets > 0 || this.hasTarget(c)) return false;
+    c.state = 'returning'; c.t = 0.45; this.slotCar[slot] = 0; cellsOf(c).forEach(q => { this.lot.occ[q[1]][q[0]] = c.id; });
+    this.ev.push({ k: 'return', car: c, slot: slot }); return true;
+  };
+  // boosters
+  Battle.prototype.freeze = function (sec) { this.frozen = sec || 5; this.ev.push({ k: 'freeze' }); };
+  Battle.prototype.bomb = function (x, y) {
+    const hit = []; this.zombies.forEach(z => { if (Math.hypot(z.x - x, z.y - y) < 78) hit.push(z); });
+    hit.forEach(z => { z.hp = Math.max(0, z.hp - 4); z.hit = .2; if (z.hp <= 0) { const i = this.zombies.indexOf(z); if (i >= 0) this.zombies.splice(i, 1); this.kills++; this.ev.push({ k: 'kill', z: z }); } });
+    this.ev.push({ k: 'bomb', x: x, y: y }); return hit.length;
+  };
+  Battle.prototype.makeWild = function (c) { c.wild = true; };
+  Battle.prototype.refill = function (n) { let k = 0; this.lot.cars.forEach(c => { if (c.state === 'slot') { c.ammo += n; c.max = Math.max(c.max, c.ammo); c.leaveT = 0.4; k++; } }); return k; };
+  Battle.prototype.heart = function () { if (this.hearts >= this.maxHearts + 2) return false; this.hearts++; return true; };
+  Battle.prototype.addSlot = function () { if (this.extraSlot) return false; this.extraSlot = true; return true; };
+
+  const cache = {};
+  // levels are validated: a decent simulated player (no boosters, no upgrades) must be able to win
+  function makeLevel(n, seed, noCheck) {
+    seed = seed || 1; let best = null, bh = -9;
+    for (let a = 0; a < 40; a++) {
+      const lv = generate(n, seed + a * 131);
+      if (!lv || !lotSolvable(lv)) continue; lv.seed = seed + a * 131;
+      if (noCheck) return lv;
+      const r = bot(lv, { cad: 0.8, err: 0.05 }, rng(seed * 3 + a), {});
+      if (r.won && r.hearts >= 2) return lv;
+      const sc = r.won ? r.hearts : r.hearts - 5; if (sc > bh) { bh = sc; best = lv; }
+    }
+    if (best) return best;
+    throw new Error('level gen failed ' + n);
+  }
+
+  /* ------------------------------------------------------------ test bot */
+  function bot(level, cfg, R, o) {
+    const B = new Battle(level, o); let next = 0.8;
+    while (B.status === 'play' && B.t < 300) {
+      if (B.t >= next) {
+        next = B.t + cfg.cad * (0.8 + R() * 0.4);
+        const L = B.lot, ex = L.cars.filter(c => c.state === 'lot' && !L.blocker(c));
+        if (ex.length && B.freeSlot() >= 0) {
+          let pick;
+          if (R() < cfg.err) pick = ex[Math.floor(R() * ex.length)];
+          else {
+            const th = new Array(B.P.nColors).fill(0), cov = new Array(B.P.nColors).fill(0);
+            B.zombies.forEach(z => { th[z.color] += z.hp * (1 + z.y / FIELD.lineY); });
+            B.level.zombies.slice(B.idx, B.idx + 18).forEach(z => { th[z.color] += z.hp * 0.55; });
+            L.cars.forEach(c => { if (c.state === 'driving' || c.state === 'slot') cov[c.color] += c.ammo; });
+            let bc = -1, bd = -1e9; th.forEach((v, i) => { const d = v - cov[i] * 1.0; if (d > bd) { bd = d; bc = i; } });
+            const cand = ex.filter(c => c.color === bc);
+            const pool = cand.length ? cand : ex;
+            pool.sort((a, b) => (bd > 6 ? b.len - a.len : a.len - b.len));
+            pick = bd > 0 ? pool[0] : null;
+          }
+          if (pick) B.tapCar(pick.id);
+        }
+      }
+      B.step(0.05); B.ev.length = 0;
+    }
+    return { won: B.status === 'won', hearts: B.hearts, t: B.t };
+  }
+
+  return { FIELD, INTROS, INTRO_LEVEL, BOOSTERS, AMMO_SMALL, AMMO_BIG, HP, SPD, DX, DY, phaseOf, diff, rng, levelParams, makeLevel, Lot, Battle, cellsOf, frontOf, lotSolvable, bot };
+})();
+
+/* Garage Defense — renderer, effects, sound, input. Logic in BusSim. */
+const Game = (function () {
+  const S = BusSim, W = 400, H = 640, F = S.FIELD;
+  const COL = [
+    { n: 'Đỏ', main: '#EF4B4B', dark: '#A12626', light: '#FF9A9A' },
+    { n: 'Xanh dương', main: '#3F8CFF', dark: '#1E58B8', light: '#9CC4FF' },
+    { n: 'Xanh lá', main: '#35C268', dark: '#1B7A3F', light: '#8EE8AE' },
+    { n: 'Vàng', main: '#FFC72E', dark: '#B88300', light: '#FFE48A' },
+    { n: 'Tím', main: '#A56BF2', dark: '#6B34B8', light: '#D2B2FA' }
+  ];
+  const SLOT_Y = F.lineY + 58, SLOT_SC = 22, LOT = { x: 16, y: F.lineY + 108, w: 368, h: 640 - (F.lineY + 108) - 12 };
+
+  /* ----------------------------------------------------------- sound */
+  const Snd = {
+    on: true, ac: null, master: null, lastShot: 0,
+    init: function () {
+      if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
+      try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; this.ac = new AC(); this.master = this.ac.createGain(); this.master.gain.value = 0.45; this.master.connect(this.ac.destination); } catch (e) { this.ac = null; }
+    },
+    tone: function (f, d, type, vol, f2, delay) {
+      if (!this.on || !this.ac) return;
+      const ac = this.ac, t0 = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t0 + d);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol || 0.2, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+      o.connect(g); g.connect(this.master); o.start(t0); o.stop(t0 + d + 0.05);
+    },
+    noise: function (d, f1, f2, vol, delay, q) {
+      if (!this.on || !this.ac) return;
+      const ac = this.ac, t0 = ac.currentTime + (delay || 0), n = Math.max(1, Math.floor(ac.sampleRate * d)), buf = ac.createBuffer(1, n, ac.sampleRate), ch = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+      const s = ac.createBufferSource(); s.buffer = buf; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q || 1; bp.frequency.setValueAtTime(f1, t0); bp.frequency.exponentialRampToValueAtTime(f2, t0 + d);
+      const g = ac.createGain(); g.gain.setValueAtTime(vol || 0.2, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+      s.connect(bp); bp.connect(g); g.connect(this.master); s.start(t0); s.stop(t0 + d);
+    },
+    shot: function (big) { const n = performance.now(); if (n - this.lastShot < 45) return; this.lastShot = n; this.tone(big ? 360 : 520, 0.07, 'square', 0.07, big ? 120 : 200); this.noise(0.05, 3000, 1200, 0.05); },
+    hit: function () { this.tone(220, 0.05, 'triangle', 0.08, 130); },
+    kill: function () { this.tone(330, 0.12, 'sine', 0.13, 660); this.tone(520, 0.1, 'sine', 0.08, 880, 0.05); },
+    leak: function () { this.tone(180, 0.35, 'sawtooth', 0.2, 90); this.noise(0.25, 800, 150, 0.15); },
+    honk: function () { this.tone(310, 0.09, 'square', 0.12); this.tone(310, 0.09, 'square', 0.12, 0, 0.13); },
+    go: function () { this.noise(0.4, 300, 1400, 0.1, 0, 0.8); this.tone(120, 0.4, 'sawtooth', 0.05, 220); },
+    park: function () { this.tone(500, 0.06, 'triangle', 0.12, 800); },
+    boom: function () { this.noise(0.5, 900, 60, 0.35, 0, 0.6); this.tone(110, 0.4, 'sine', 0.3, 40); },
+    freeze: function () { [1400, 1900, 2500].forEach((f, i) => this.tone(f, 0.25, 'sine', 0.09, f * 0.8, i * 0.06)); },
+    magic: function () { [880, 1175, 1568, 2093].forEach((f, i) => this.tone(f, 0.2, 'sine', 0.09, 0, i * 0.05)); },
+    pop: function () { this.tone(700, 0.08, 'sine', 0.14, 1100); },
+    win: function () { [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.4, 'triangle', 0.18, 0, i * 0.1)); },
+    lose: function () { [392, 330, 262, 196].forEach((f, i) => this.tone(f, 0.36, 'triangle', 0.2, f * 0.97, i * 0.17)); }
+  };
+
+  /* ------------------------------------------------------------ state */
+  const G = { n: 1, level: null, B: null, state: 'idle', mode: null, t: 0, parts: [], floats: [], leaving: [], rings: [], shake: 0, flashLine: 0, msg: '', slotShake: 0, blockFlash: null, vis: {}, tr: [], opts: {} };
+  let ctx = null, scale = 1, mkCanvas = null, LAY = { cs: 30, ox: 16, oy: 452 };
+  const cb = { onWin: function () {}, onLose: function () {}, onChange: function () {}, onToast: function () {}, onUse: function () {}, inv: function () { return 0; } };
+
+  function lotLayout() {
+    const L = G.B.lot, cs = Math.min(L.cols <= 6 ? 46 : L.cols <= 8 ? 36 : 30, Math.floor(Math.min(LOT.w / L.cols, LOT.h / L.rows)));
+    LAY = { cs: cs, ox: LOT.x + (LOT.w - cs * L.cols) / 2, oy: LOT.y + (LOT.h - cs * L.rows) / 2 };
+  }
+  function start(n, opt) {
+    opt = opt || {};
+    G.n = n; G.opts = opt; G.level = S.makeLevel(n, 1 + ((n * 7) % 5));
+    G.B = new S.Battle(G.level, opt.perks || {});
+    lotLayout();
+    G.state = 'play'; G.mode = null; G.t = 0; G.parts = []; G.floats = []; G.leaving = []; G.rings = []; G.shake = 0; G.flashLine = 0; G.vis = {}; G.tr = []; G.blockFlash = null; G.slotShake = 0; G.frozenFx = 0;
+    cb.onChange();
+  }
+
+  /* ---------------------------------------------------------- helpers */
+  function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function heart(c, x, y, s, fill, ink) {
+    c.beginPath(); c.moveTo(x, y + s * .9); c.bezierCurveTo(x - s * 1.5, y - s * .1, x - s * .7, y - s * 1.1, x, y - s * .35); c.bezierCurveTo(x + s * .7, y - s * 1.1, x + s * 1.5, y - s * .1, x, y + s * .9); c.closePath();
+    c.fillStyle = fill; c.fill(); c.lineWidth = 2; c.strokeStyle = ink; c.stroke();
+  }
+  function burst(x, y, n, cols, spd, life, g) {
+    for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, s = (.4 + Math.random()) * (spd || 120); G.parts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - (spd || 120) * .35, g: g == null ? 240 : g, life: (life || .6) * (.7 + Math.random() * .6), t: 0, c: cols[Math.floor(Math.random() * cols.length)], r: 2 + Math.random() * 3, sq: Math.random() < .4, rot: Math.random() * 6 }); }
+  }
+  function floatText(txt, x, y, col, big) { G.floats.push({ txt: txt, x: x, y: y, t: 0, col: col || '#fff', big: !!big }); }
+  function slotX(i) { const n = G.B.usableSlots(); return 16 + (368 / n) * (i + .5); }
+  function angOf(dir) { return [0, Math.PI / 2, Math.PI, -Math.PI / 2][dir]; }
+  function lerpAng(a, b, k) { let d = b - a; while (d > Math.PI) d -= 6.283; while (d < -Math.PI) d += 6.283; return a + d * k; }
+  function carCenter(car) { const cs = LAY.cs, horiz = car.dir === 0 || car.dir === 2; const w = horiz ? car.len : 1, h = horiz ? 1 : car.len; return [LAY.ox + (car.c + w / 2) * cs, LAY.oy + (car.r + h / 2) * cs]; }
+
+  /* ------------------------------------------------------------ pose */
+  function pose(car) {
+    const cs = LAY.cs;
+    if (car.state === 'lot') { const p = carCenter(car); return { x: p[0], y: p[1], a: angOf(car.dir), sc: cs }; }
+    const v = G.vis[car.id] || {};
+    if (car.state === 'driving') {
+      const p = Math.max(0, Math.min(1, 1 - car.t / 0.62)), st = v.from || carCenter(car), ex = v.exit || st, sx = slotX(car.slot), sy = SLOT_Y;
+      if (p < .4) { const q = p / .4, e = q * q; return { x: st[0] + (ex[0] - st[0]) * e, y: st[1] + (ex[1] - st[1]) * e, a: angOf(car.dir), sc: cs }; }
+      const q = (p - .4) / .6, e = q * q * (3 - 2 * q), cx0 = ex[0], cy0 = ex[1] * .3 + sy * .7;
+      const x = (1 - e) * (1 - e) * ex[0] + 2 * (1 - e) * e * cx0 + e * e * sx, y = (1 - e) * (1 - e) * ex[1] + 2 * (1 - e) * e * cy0 + e * e * sy;
+      return { x: x, y: y, a: lerpAng(angOf(car.dir), -Math.PI / 2, e), sc: cs + (SLOT_SC - cs) * e };
+    }
+    if (car.state === 'returning') {
+      const p = Math.max(0, Math.min(1, 1 - car.t / .45)), e = p * p * (3 - 2 * p), to = carCenter(car), sx = v.slotPos ? v.slotPos[0] : to[0], sy = v.slotPos ? v.slotPos[1] : to[1];
+      return { x: sx + (to[0] - sx) * e, y: sy + (to[1] - sy) * e, a: lerpAng(-Math.PI / 2, angOf(car.dir), e), sc: SLOT_SC + (cs - SLOT_SC) * e };
+    }
+    const kick = (v.kick || 0);
+    return { x: slotX(car.slot), y: SLOT_Y + kick * 3, a: -Math.PI / 2, sc: SLOT_SC };
+  }
+
+  /* -------------------------------------------------------- draw: car */
+  function drawCar(c, car, p, o) {
+    o = o || {};
+    const col = COL[car.color], big = car.len === 3, L = car.len * p.sc * (big ? .96 : .9), Wd = p.sc * (big ? .86 : .78);
+    c.save(); c.translate(p.x, p.y); c.rotate(p.a);
+    if (o.shake) c.translate(Math.sin(G.t * 70) * 2.5, 0);
+    c.globalAlpha = o.alpha == null ? 1 : o.alpha;
+    // shadow
+    c.fillStyle = 'rgba(0,0,0,.2)'; rr(c, -L / 2 + 2, -Wd / 2 + 3, L, Wd, Wd * .3); c.fill();
+    // wheels
+    c.fillStyle = '#2a2a2e';
+    [[-.27, -1], [-.27, 1], [.27, -1], [.27, 1]].forEach(function (q) { rr(c, q[0] * L - Wd * .22, q[1] * (Wd / 2) - Wd * .08 + (q[1] > 0 ? 0 : -Wd * .06), Wd * .44, Wd * .14, 2); c.fill(); });
+    // body
+    rr(c, -L / 2, -Wd / 2, L, Wd, Wd * .3); c.fillStyle = o.tint || col.main; c.fill(); c.lineWidth = Math.max(1.5, p.sc * .07); c.strokeStyle = col.dark; c.stroke();
+    // roof / cabin
+    if (big) {
+      rr(c, -L * .46, -Wd * .36, L * .52, Wd * .72, Wd * .16); c.fillStyle = col.light; c.fill(); c.lineWidth = 1; c.strokeStyle = col.dark; c.stroke();
+      c.strokeStyle = col.dark; c.globalAlpha *= .5; c.beginPath(); c.moveTo(-L * .2, -Wd * .36); c.lineTo(-L * .2, Wd * .36); c.stroke(); c.globalAlpha = o.alpha == null ? 1 : o.alpha;
+      rr(c, L * .1, -Wd * .34, L * .24, Wd * .68, Wd * .12); c.fillStyle = '#1f3550'; c.fill();
+    } else {
+      rr(c, -L * .22, -Wd * .34, L * .36, Wd * .68, Wd * .16); c.fillStyle = col.light; c.fill(); c.lineWidth = 1; c.strokeStyle = col.dark; c.stroke();
+      rr(c, L * .12, -Wd * .33, L * .2, Wd * .66, Wd * .12); c.fillStyle = '#1f3550'; c.fill();
+      rr(c, -L * .38, -Wd * .3, L * .1, Wd * .6, Wd * .1); c.fillStyle = '#1f3550'; c.fill();
+    }
+    if (car.wild) { const g = c.createLinearGradient(-L / 2, 0, L / 2, 0); ['#FF4B4B', '#FFC72E', '#35C268', '#3F8CFF', '#A56BF2'].forEach(function (cc, i) { g.addColorStop(i / 4, cc); }); c.fillStyle = g; rr(c, -L * .4, -Wd * .12, L * .8, Wd * .24, Wd * .1); c.fill(); }
+    if (o.arrow) { const al = L * (big ? .46 : .5), ah = Wd * .34; c.beginPath(); c.moveTo(-al / 2, 0); c.lineTo(al / 2 - ah * .5, 0); c.lineWidth = Math.max(2.5, Wd * .16); c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = 'rgba(0,0,0,.35)'; c.stroke(); c.beginPath(); c.moveTo(al / 2 + ah * .35, 0); c.lineTo(al / 2 - ah * .65, -ah); c.lineTo(al / 2 - ah * .65, ah); c.closePath(); c.fillStyle = 'rgba(0,0,0,.35)'; c.fill(); c.strokeStyle = 'rgba(0,0,0,.35)'; c.stroke(); c.translate(0, -1);
+      c.beginPath(); c.moveTo(-al / 2, 0); c.lineTo(al / 2 - ah * .5, 0); c.lineWidth = Math.max(2, Wd * .12); c.strokeStyle = '#fff'; c.stroke(); c.beginPath(); c.moveTo(al / 2 + ah * .35, 0); c.lineTo(al / 2 - ah * .65, -ah); c.lineTo(al / 2 - ah * .65, ah); c.closePath(); c.fillStyle = '#fff'; c.fill(); c.translate(0, 1); }
+    // lights
+    c.fillStyle = '#FFF6B0'; c.beginPath(); c.arc(L / 2 - 2, -Wd * .3, Wd * .1, 0, 7); c.arc(L / 2 - 2, Wd * .3, Wd * .1, 0, 7); c.fill();
+    c.fillStyle = '#FF3B3B'; c.fillRect(-L / 2, -Wd * .36, 2.2, Wd * .2); c.fillRect(-L / 2, Wd * .16, 2.2, Wd * .2);
+    c.restore();
+    // ammo number (kept upright)
+    if (o.num !== false) {
+      c.save(); const off = o.arrow ? -L * .34 : 0; c.translate(p.x + Math.cos(p.a) * off, p.y + Math.sin(p.a) * off); const fs = Math.round(p.sc * (o.arrow ? .4 : (big ? .62 : .56)));
+      c.font = '800 ' + fs + 'px Baloo 2, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = o.arrow ? 2.6 : 3.2; c.strokeStyle = col.dark; c.fillStyle = '#fff'; c.lineJoin = 'round';
+      c.globalAlpha = o.alpha == null ? 1 : o.alpha;
+      const tx = Math.cos(p.a) * L * (big ? -.18 : -.04) * 0, ty = 0; c.strokeText(String(car.ammo), tx, ty + 1); c.fillText(String(car.ammo), tx, ty + 1); c.restore();
+    }
+  }
+  function carIcon(color, len, size) {
+    if (!mkCanvas) return '';
+    const cv = mkCanvas(size, size), c = cv.getContext('2d');
+    drawCar(c, { color: color, len: len, ammo: len === 3 ? S.AMMO_BIG : S.AMMO_SMALL }, { x: size / 2, y: size / 2, a: 0, sc: size / (len === 3 ? 3.4 : 2.5) }, { num: false });
+    return cv.toDataURL ? cv.toDataURL('image/png') : '';
+  }
+
+  /* ----------------------------------------------------- draw: zombie */
+  function drawZombie(c, z) {
+    const col = COL[z.color], k = z.type === 'boss' ? 1.75 : z.type === 'tank' ? 1.0 : z.type === 'runner' ? .7 : .78;
+    const t = G.t * (z.type === 'runner' ? 12 : 6) + z.ph, bob = Math.sin(t) * 1.6 * k, sway = Math.sin(t * .5) * 2 * k;
+    c.save(); c.translate(z.x + sway, z.y + bob); c.scale(k, k);
+    const frozen = G.B.frozen > 0;
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.beginPath(); c.ellipse(0, 18, 13, 4, 0, 0, 7); c.fill();
+    // legs
+    c.fillStyle = frozen ? '#8AB4D8' : '#4b5a74'; const lg = Math.sin(t) * 2.5;
+    rr(c, -8, 10, 6, 9 + lg, 2); c.fill(); rr(c, 2, 10, 6, 9 - lg, 2); c.fill();
+    // arms (reaching forward = down the screen)
+    c.strokeStyle = frozen ? '#9CC4E4' : '#8DBE7A'; c.lineWidth = 5; c.lineCap = 'round';
+    const am = Math.sin(t * .8) * 2;
+    c.beginPath(); c.moveTo(-10, -1); c.lineTo(-15, 11 + am); c.moveTo(10, -1); c.lineTo(15, 11 - am); c.stroke();
+    // torso (shirt colour)
+    rr(c, -11, -4, 22, 17, 6); c.fillStyle = z.hit > 0 ? '#fff' : col.main; c.fill(); c.lineWidth = 2; c.strokeStyle = col.dark; c.stroke();
+    c.fillStyle = col.light; c.globalAlpha = .55; c.fillRect(-11, 3, 22, 3); c.globalAlpha = 1;
+    // head
+    c.beginPath(); c.arc(0, -11, 11, 0, 7); c.fillStyle = z.hit > 0 ? '#fff' : (frozen ? '#BFE0F5' : '#A9D68F'); c.fill(); c.lineWidth = 2; c.strokeStyle = '#55784a'; c.stroke();
+    // hair tufts
+    c.strokeStyle = '#55784a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-3, -21); c.lineTo(-4, -25); c.moveTo(2, -22); c.lineTo(4, -26); c.stroke();
+    // eyes + mouth
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(-4.2, -12, 3.4, 0, 7); c.arc(4.2, -12.5, 3, 0, 7); c.fill();
+    c.fillStyle = '#222'; c.beginPath(); c.arc(-4, -11.4, 1.5, 0, 7); c.arc(4.4, -12, 1.4, 0, 7); c.fill();
+    c.strokeStyle = '#3b2a2a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-4, -5.5); c.quadraticCurveTo(0, -3, 4, -6); c.stroke();
+    if (z.type === 'tank') { c.fillStyle = '#7C8796'; rr(c, -12, -23, 24, 8, 4); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#444d5a'; c.stroke(); rr(c, -13, -2, 26, 6, 3); c.fillStyle = '#7C8796'; c.fill(); c.stroke(); }
+    if (z.type === 'boss') { c.fillStyle = '#FFD34D'; c.beginPath(); c.moveTo(-9, -22); c.lineTo(-9, -29); c.lineTo(-4, -24); c.lineTo(0, -31); c.lineTo(4, -24); c.lineTo(9, -29); c.lineTo(9, -22); c.closePath(); c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#8a6a00'; c.stroke(); }
+    if (z.type === 'runner') { c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-14, -30); c.lineTo(-14, -20); c.moveTo(0, -34); c.lineTo(0, -26); c.moveTo(14, -30); c.lineTo(14, -20); c.stroke(); }
+    c.restore();
+    if (z.max > 1) {
+      const bw = 26 * k, bx = z.x - bw / 2, by = z.y - 30 * k - 4;
+      c.fillStyle = 'rgba(0,0,0,.4)'; rr(c, bx - 1, by - 1, bw + 2, 6, 3); c.fill(); c.fillStyle = col.main; rr(c, bx, by, bw * Math.max(0, z.hp / z.max), 4, 2); c.fill();
+    }
+  }
+
+  /* -------------------------------------------------------- background */
+  function background(c) {
+    // grass sides
+    c.fillStyle = '#9ACB6A'; c.fillRect(0, 0, W, H);
+    const bi = Math.min(2, Math.floor((G.n - 1) / 12));
+    // road
+    const road = ['#5C6270', '#555B6A', '#4C5160'][bi];
+    c.fillStyle = road; c.fillRect(12, 60, W - 24, F.lineY - 60 + 8);
+    c.strokeStyle = 'rgba(255,255,255,.28)'; c.lineWidth = 3; c.setLineDash([14, 16]);
+    const scroll = (G.t * (G.B && G.B.frozen <= 0 ? 12 : 0)) % 30;
+    [W * .25, W * .5, W * .75].forEach(function (x) { c.beginPath(); c.moveTo(x, 58 + scroll - 30); c.lineTo(x, F.lineY); c.stroke(); });
+    c.setLineDash([]);
+    c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(12, 60, 3, F.lineY - 52); c.fillRect(W - 15, 60, 3, F.lineY - 52);
+    // trees on the grass edges
+    [[6, 120], [394, 190], [8, 250], [392, 90], [394, 300]].forEach(function (q) { c.fillStyle = '#5E9B45'; c.beginPath(); c.arc(q[0], q[1], 10, 0, 7); c.fill(); c.fillStyle = '#7CB95A'; c.beginPath(); c.arc(q[0] - 2, q[1] - 3, 5, 0, 7); c.fill(); });
+    // barricade line
+    const near = G.flashLine > 0 ? G.flashLine : 0;
+    c.fillStyle = near > 0 ? '#FF6A6A' : '#E8E3D3'; rr(c, 10, F.lineY - 2, W - 20, 14, 5); c.fill();
+    c.fillStyle = '#E8892E';
+    for (let x = 14; x < W - 20; x += 24) { c.beginPath(); c.moveTo(x, F.lineY - 2); c.lineTo(x + 12, F.lineY - 2); c.lineTo(x + 6, F.lineY + 12); c.lineTo(x - 6, F.lineY + 12); c.closePath(); c.fill(); }
+    c.lineWidth = 2; c.strokeStyle = 'rgba(60,40,20,.6)'; rr(c, 10, F.lineY - 2, W - 20, 14, 5); c.stroke();
+    // parking bays band
+    c.fillStyle = '#6E7584'; rr(c, 10, F.lineY + 14, W - 20, 92, 14); c.fill();
+    // lot
+    c.fillStyle = '#8A91A0'; rr(c, 8, LOT.y - 8, W - 16, LOT.h + 16, 16); c.fill();
+    c.fillStyle = '#707887'; rr(c, 10, LOT.y - 6, W - 20, LOT.h + 12, 14); c.fill();
+    // lot cells lines
+    const L = G.B.lot; c.strokeStyle = 'rgba(255,255,255,.2)'; c.lineWidth = 1.5;
+    for (let r = 0; r <= L.rows; r++) { c.beginPath(); c.moveTo(LAY.ox, LAY.oy + r * LAY.cs); c.lineTo(LAY.ox + L.cols * LAY.cs, LAY.oy + r * LAY.cs); c.stroke(); }
+    for (let q = 0; q <= L.cols; q++) { c.beginPath(); c.moveTo(LAY.ox + q * LAY.cs, LAY.oy); c.lineTo(LAY.ox + q * LAY.cs, LAY.oy + L.rows * LAY.cs); c.stroke(); }
+  }
+  function drawSlots(c) {
+    const B = G.B, n = B.usableSlots(), w = 368 / n;
+    for (let i = 0; i < n; i++) {
+      const x = 16 + w * i + 4, y = F.lineY + 19, hh = 78;
+      let sh = 0; if (G.slotShake > 0) sh = Math.sin(G.t * 60) * 3 * G.slotShake;
+      c.save(); c.translate(sh, 0);
+      c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2.5; c.setLineDash([7, 6]); rr(c, x, y, w - 8, hh, 10); c.stroke(); c.setLineDash([]);
+      if (!B.slotCar[i]) { c.fillStyle = 'rgba(255,255,255,.5)'; c.font = '800 13px Baloo 2, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Ô ' + (i + 1), x + (w - 8) / 2, y + hh / 2); }
+      c.restore();
+    }
+  }
+
+  /* -------------------------------------------------------------- update */
+  function handle(e) {
+    const B = G.B;
+    if (e.k === 'shot') {
+      const p = pose(e.car), v = G.vis[e.car.id] || (G.vis[e.car.id] = {}); v.kick = 1;
+      G.tr.push({ x0: p.x, y0: p.y - 30, z: e.z, t: 0, col: COL[e.car.color].main });
+      burst(p.x, p.y - 32, 2, [COL[e.car.color].light, '#fff'], 60, .18, 0); Snd.shot(e.car.len === 3);
+    } else if (e.k === 'hit') { Snd.hit(); burst(e.z.x, e.z.y - 6, 3, ['#fff', COL[e.z.color].light], 70, .25, 100); }
+    else if (e.k === 'kill') {
+      const z = e.z, col = COL[z.color];
+      burst(z.x, z.y, z.type === 'boss' ? 40 : 14, [col.main, col.light, '#A9D68F', '#fff'], z.type === 'boss' ? 220 : 130, .7);
+      G.rings.push({ x: z.x, y: z.y, t: 0, r: 10, col: col.light, max: z.type === 'boss' ? 70 : 28 }); Snd.kill();
+    } else if (e.k === 'leak') { G.shake = .35; G.flashLine = .5; floatText('-1 tim', e.x, e.y - 14, '#FF8C8C', true); burst(e.x, e.y, 14, ['#FF6A6A', '#fff'], 120, .5); Snd.leak(); cb.onChange(); }
+    else if (e.k === 'arrive') { Snd.park(); const p = pose(e.car); burst(p.x, p.y + 20, 6, ['#ddd', '#bbb'], 50, .4, 0); cb.onChange(); }
+    else if (e.k === 'leave') {
+      const p = G.vis[e.car.id] && e.car.slot >= 0 ? { x: slotX(e.car.slot), y: SLOT_Y, a: -Math.PI / 2, sc: SLOT_SC } : null;
+      if (p) { G.leaving.push({ car: e.car, p: p, t: 0 }); burst(p.x, p.y, 8, ['#ddd', '#bbb', '#fff'], 70, .5, 0); }
+      cb.onChange();
+    }
+    else if (e.k === 'return') { Snd.park(); (G.vis[e.car.id] || (G.vis[e.car.id] = {})).slotPos = [slotX(e.slot), SLOT_Y]; cb.onChange(); }
+    else if (e.k === 'bomb') { G.rings.push({ x: e.x, y: e.y, t: 0, r: 8, col: '#FFB347', max: 80 }); burst(e.x, e.y, 30, ['#FFB347', '#FF6A3D', '#FFE08A', '#444'], 220, .8); G.shake = .4; Snd.boom(); }
+    else if (e.k === 'freeze') { Snd.freeze(); G.frozenFx = 1; }
+    else if (e.k === 'win') { G.state = 'won'; G.winAt = G.t + .9; }
+    else if (e.k === 'lose') { G.state = 'lost'; G.loseAt = G.t + .8; }
+  }
+  function update(dt) {
+    G.t += dt; const B = G.B; if (!B) return;
+    if (G.state === 'play' || G.state === 'won' || G.state === 'lost') {
+      if (G.state === 'play') { let rem = dt; while (rem > 0) { const d = Math.min(.05, rem); B.step(d); rem -= d; } }
+      B.ev.forEach(handle); B.ev.length = 0;
+    }
+    Object.keys(G.vis).forEach(function (k) { const v = G.vis[k]; if (v.kick > 0) v.kick = Math.max(0, v.kick - dt * 9); });
+    G.tr = G.tr.filter(function (b) { b.t += dt; return b.t < .13; });
+    G.leaving = G.leaving.filter(function (l) { l.t += dt; return l.t < .5; });
+    G.rings = G.rings.filter(function (r) { r.t += dt; return r.t < .45; });
+    G.parts = G.parts.filter(function (p) { p.t += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += dt * 6; return p.t < p.life; });
+    G.floats = G.floats.filter(function (f) { f.t += dt; return f.t < 1; });
+    if (G.shake > 0) G.shake -= dt; if (G.flashLine > 0) G.flashLine -= dt; if (G.slotShake > 0) G.slotShake -= dt * 2; if (G.frozenFx > 0) G.frozenFx -= dt;
+    if (G.blockFlash) { G.blockFlash.t += dt; if (G.blockFlash.t > .5) G.blockFlash = null; }
+    if (G.state === 'won' && G.winAt && G.t >= G.winAt) { G.winAt = 0; Snd.win(); cb.onWin(); }
+    if (G.state === 'lost' && G.loseAt && G.t >= G.loseAt) { G.loseAt = 0; Snd.lose(); cb.onLose(); }
+    if (G.msg) { cb.onToast(G.msg); G.msg = ''; }
+  }
+
+  /* -------------------------------------------------------------- render */
+  function render() {
+    const c = ctx; if (!c || !G.B) return; const B = G.B;
+    c.setTransform(scale, 0, 0, scale, 0, 0);
+    c.save();
+    if (G.shake > 0) c.translate((Math.random() - .5) * 8 * G.shake, (Math.random() - .5) * 8 * G.shake);
+    background(c);
+    // HUD
+    c.fillStyle = 'rgba(255,255,255,.88)'; rr(c, 8, 6, W - 16, 48, 14); c.fill();
+    const hn = B.maxHearts + (B.hearts > B.maxHearts ? B.hearts - B.maxHearts : 0);
+    for (let i = 0; i < hn; i++) heart(c, 24 + i * 23, 26, 8, i < B.hearts ? '#FF4F6A' : 'rgba(80,60,60,.18)', i < B.hearts ? '#B3243D' : 'rgba(80,60,60,.3)');
+    const total = G.level.zombies.length, left = total - B.kills;
+    c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = '#3a3340'; c.font = '800 15px Baloo 2, system-ui, sans-serif'; c.fillText('Zombie: ' + Math.max(0, left), W - 20, 22);
+    c.fillStyle = 'rgba(0,0,0,.12)'; rr(c, 18, 42, W - 36, 6, 3); c.fill(); c.fillStyle = '#6BC14F'; rr(c, 18, 42, Math.max(0, (W - 36) * B.kills / total), 6, 3); c.fill();
+    if (G.mode) { c.textAlign = 'center'; c.fillStyle = '#fff'; c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 4; c.font = '800 15px Baloo 2, system-ui, sans-serif'; const m = G.mode === 'bomb' ? 'Chạm vào đường để thả bom' : 'Chạm một xe trong bãi: xe đó bắn được mọi màu'; c.strokeText(m, W / 2, 76); c.fillText(m, W / 2, 76); }
+    // zombies sorted by y
+    B.zombies.slice().sort(function (a, b) { return a.y - b.y; }).forEach(function (z) { drawZombie(c, z); });
+    // tracers
+    G.tr.forEach(function (b) { const k = b.t / .13, z = b.z, x = b.x0 + (z.x - b.x0) * k, y = b.y0 + (z.y - 8 - b.y0) * k, x2 = b.x0 + (z.x - b.x0) * Math.max(0, k - .35), y2 = b.y0 + (z.y - 8 - b.y0) * Math.max(0, k - .35); c.strokeStyle = b.col; c.lineWidth = 3.2; c.lineCap = 'round'; c.beginPath(); c.moveTo(x2, y2); c.lineTo(x, y); c.stroke(); c.strokeStyle = '#fff'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x2, y2); c.lineTo(x, y); c.stroke(); });
+    if (B.frozen > 0 || G.frozenFx > 0) { c.fillStyle = 'rgba(150,215,255,.22)'; c.fillRect(12, 60, W - 24, F.lineY - 52); }
+    drawSlots(c);
+    // lot cones
+    const L = B.lot, cs = LAY.cs;
+    for (let r = 0; r < L.rows; r++) for (let q = 0; q < L.cols; q++) if (L.cone[r][q]) {
+      let wob = 0; if (G.blockFlash && G.blockFlash.cone && G.blockFlash.cone[0] === q && G.blockFlash.cone[1] === r) wob = Math.sin(G.t * 50) * 2.5;
+      const x = LAY.ox + (q + .5) * cs + wob, y = LAY.oy + (r + .5) * cs;
+      c.fillStyle = '#FF8A2A'; c.beginPath(); c.moveTo(x, y - cs * .38); c.lineTo(x + cs * .26, y + cs * .3); c.lineTo(x - cs * .26, y + cs * .3); c.closePath(); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#a24d0a'; c.stroke();
+      c.fillStyle = '#fff'; c.fillRect(x - cs * .14, y - cs * .02, cs * .28, cs * .1);
+      c.fillStyle = '#3b3b40'; rr(c, x - cs * .32, y + cs * .28, cs * .64, cs * .1, 2); c.fill();
+    }
+    // tutorial hint on early levels: point at a useful car while nothing is parked
+    if (G.n <= 3 && G.state === 'play' && !B.lot.cars.some(function (q) { return q.state === 'slot' || q.state === 'driving'; })) {
+      const want = (B.zombies[0] ? B.zombies[0].color : (G.level.zombies[B.idx] ? G.level.zombies[B.idx].color : -1));
+      const cand = B.lot.cars.filter(function (q) { return q.state === 'lot' && !B.lot.blocker(q); });
+      const hc = cand.find(function (q) { return q.color === want; }) || null;
+      if (hc) { const p = pose(hc), vert = hc.dir === 1 || hc.dir === 3, w = (vert ? 1 : hc.len) * LAY.cs, h = (vert ? hc.len : 1) * LAY.cs; c.save(); c.strokeStyle = '#FFE66B'; c.lineWidth = 4; c.globalAlpha = .6 + .4 * Math.sin(G.t * 7); rr(c, p.x - w / 2 - 4, p.y - h / 2 - 4, w + 8, h + 8, 10); c.stroke(); c.restore(); }
+    }
+    // cars in lot, slots, driving
+    const order = { lot: 0, slot: 1, returning: 2, driving: 2 };
+    B.lot.cars.filter(function (car) { return car.state in order; }).sort(function (a, b) { return order[a.state] - order[b.state]; }).forEach(function (car) {
+      const p = pose(car); const bf = G.blockFlash && G.blockFlash.car === car.id;
+      drawCar(c, car, p, { arrow: car.state !== 'slot', shake: bf, alpha: (car.state === 'slot' && !B.hasTarget(car) && car.bullets === 0 && car.ammo > 0) ? .78 : 1, tint: G.blockFlash && G.blockFlash.by === car.id && Math.floor(G.blockFlash.t * 14) % 2 === 0 ? '#ff5b5b' : null });
+      if (car.state === 'slot' && !B.hasTarget(car) && car.bullets === 0 && car.ammo > 0) { c.save(); c.font = '800 13px Baloo 2, system-ui, sans-serif'; c.textAlign = 'center'; c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = 'rgba(0,0,0,.55)'; c.lineWidth = 3; const zt = 'zZ'; c.strokeText(zt, p.x + 14, p.y - 36 + Math.sin(G.t * 3) * 2); c.fillText(zt, p.x + 14, p.y - 36 + Math.sin(G.t * 3) * 2); c.restore(); }
+      if (car.state === 'slot') {
+        // idle hint: car waiting for its colour
+        const v = G.vis[car.id] || {}; if (v.kick > .5) { c.fillStyle = 'rgba(255,240,150,' + (v.kick - .4) + ')'; c.beginPath(); c.arc(p.x, p.y - 36, 7 * v.kick, 0, 7); c.fill(); }
+      }
+        });
+    G.leaving.forEach(function (l) { const k = l.t / .5; drawCar(c, l.car, { x: l.p.x, y: l.p.y + k * 40, a: l.p.a, sc: l.p.sc * (1 - k * .2) }, { alpha: 1 - k, num: false }); });
+    // rings / particles / floaters
+    G.rings.forEach(function (r) { const k = r.t / .45; c.save(); c.globalAlpha = 1 - k; c.strokeStyle = r.col; c.lineWidth = 4 * (1 - k) + 1; c.beginPath(); c.arc(r.x, r.y, r.r + (r.max - r.r) * k, 0, 7); c.stroke(); c.restore(); });
+    G.parts.forEach(function (p) { c.save(); c.globalAlpha = Math.max(0, 1 - p.t / p.life); c.fillStyle = p.c; c.translate(p.x, p.y); c.rotate(p.rot); if (p.sq) c.fillRect(-p.r, -p.r * .6, p.r * 2, p.r * 1.2); else { c.beginPath(); c.arc(0, 0, p.r, 0, 7); c.fill(); } c.restore(); });
+    G.floats.forEach(function (f) { const k = f.t; c.save(); c.globalAlpha = k < .7 ? 1 : 1 - (k - .7) / .3; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 ' + (f.big ? 18 : 14) + 'px Baloo 2, system-ui, sans-serif'; c.lineWidth = 4; c.strokeStyle = 'rgba(40,30,40,.75)'; c.lineJoin = 'round'; const y = f.y - k * 30; c.strokeText(f.txt, f.x, y); c.fillStyle = f.col; c.fillText(f.txt, f.x, y); c.restore(); });
+    c.restore();
+  }
+
+  /* --------------------------------------------------------------- input */
+  function pointer(px, py) {
+    const B = G.B; if (!B || G.state !== 'play') return;
+    if (G.mode === 'bomb') {
+      if (py > 64 && py < F.lineY + 10) { G.mode = null; spend('bomb'); B.bomb(px, py); } return;
+    }
+    if (py > F.lineY + 10 && py < F.lineY + 104) {
+      const n = B.usableSlots(), i = Math.floor((px - 16) / (368 / n));
+      if (i >= 0 && i < n && B.slotCar[i]) {
+        if (B.returnCar(i)) return;
+        const cc = B.lot.byId[B.slotCar[i]]; if (cc && cc.state === 'slot') G.msg = cc.bullets > 0 || B.hasTarget(cc) ? 'Xe đang bắn, chưa rút được' : '';
+      }
+      return;
+    }
+    const q = Math.floor((px - LAY.ox) / LAY.cs), r = Math.floor((py - LAY.oy) / LAY.cs);
+    if (q < 0 || r < 0 || q >= B.lot.cols || r >= B.lot.rows) return;
+    const id = B.lot.occ[r][q]; if (!id) return;
+    const car = B.lot.byId[id];
+    const from = carCenter(car), ray = B.lot.ray(car), cs = LAY.cs;
+    if (G.mode === 'rainbow') { const bl = B.lot.blocker(car); if (bl || B.freeSlot() < 0) { G.msg = bl ? 'Xe này đang bị chặn' : 'Hết ô đỗ!'; return; } B.makeWild(car); G.mode = null; spend('rainbow'); Snd.magic(); }
+    const res = B.tapCar(id); if (!res) return;
+    if (res.t === 'blocked') { G.blockFlash = { car: id, by: res.by.k === 'car' ? res.by.id : 0, cone: res.by.k === 'cone' ? [res.by.x, res.by.y] : null, t: 0 }; Snd.honk(); }
+    else if (res.t === 'full') { G.slotShake = 1; G.msg = 'Hết ô đỗ! Chờ xe bắn xong'; Snd.honk(); }
+    else {
+      const d = (ray.length + car.len * .5 + .3) * cs; G.vis[id] = { from: from, exit: [from[0] + S.DX[car.dir] * d, from[1] + S.DY[car.dir] * d], kick: 0 };
+      Snd.go(); res.melted.forEach(function (m) { burst(LAY.ox + (m[0] + .5) * cs, LAY.oy + (m[1] + .5) * cs, 8, ['#FF8A2A', '#fff'], 90, .5); });
+      cb.onChange();
+    }
+  }
+
+  /* ------------------------------------------------------------ boosters */
+  function spend(id) { cb.onUse(id); cb.onChange(); }
+  function useBooster(id) {
+    const B = G.B; if (!B || G.state !== 'play') return 'wait';
+    if (cb.inv(id) <= 0) return 'none';
+    if (id === 'freeze') { B.freeze(5); spend(id); return 'ok'; }
+    if (id === 'bomb') { G.mode = G.mode === 'bomb' ? null : 'bomb'; cb.onChange(); return G.mode ? 'mode' : 'off'; }
+    if (id === 'rainbow') { G.mode = G.mode === 'rainbow' ? null : 'rainbow'; cb.onChange(); return G.mode ? 'mode' : 'off'; }
+    if (id === 'ammo') { const k = B.refill(3); if (!k) { G.msg = 'Chưa có xe nào đang đỗ'; return 'fail'; } spend(id); Snd.magic(); return 'ok'; }
+    if (id === 'heart') { if (!B.heart()) { G.msg = 'Tim đã đầy'; return 'fail'; } spend(id); Snd.magic(); floatText('+1 tim', 60, 60, '#FF8CA0', true); return 'ok'; }
+    if (id === 'slot') { if (!B.addSlot()) { G.msg = 'Đã mở ô phụ rồi'; return 'fail'; } spend(id); Snd.magic(); return 'ok'; }
+    return 'fail';
+  }
+  function reviveHeart() { const B = G.B; B.hearts = Math.min(B.maxHearts, B.hearts + 2); B.status = 'play'; G.state = 'play'; G.loseAt = 0; cb.onChange(); }
+
+  function init(o) { ctx = o.ctx; scale = o.scale || 1; mkCanvas = o.mk || function (w, h) { const e = document.createElement('canvas'); e.width = w; e.height = h; return e; }; }
+  return { S: S, G: G, Snd: Snd, cb: cb, COL: COL, W: W, H: H, init: init, setScale: function (s) { scale = s; }, start: start, update: update, render: render, pointer: pointer, useBooster: useBooster, reviveHeart: reviveHeart, carIcon: carIcon, lay: function () { return LAY; } };
+})();
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = Game.S, G = Game.G, cv = $('cv'), stage = $('stage');
+  var KEY = 'phongtuyenxe.v2';
+  try { localStorage.removeItem('phongtuyenxe.v1'); } catch (e) {}
+  var ICON = {
+    freeze: '<path d="M12 2.5v19M4 7l16 10M20 7L4 17"/><path d="M9.5 4.5L12 7l2.5-2.5M9.5 19.5L12 17l2.5 2.5"/>',
+    rainbow: '<path d="M3.5 17a8.5 8.5 0 0 1 17 0"/><path d="M7.5 17a4.5 4.5 0 0 1 9 0"/><path d="M3 17h2M19 17h2"/>',
+    bomb: '<circle cx="11" cy="14" r="7"/><path d="M15.5 8.5L18 6M17 4l3 3M19 3.5l1.5-.5"/>',
+    ammo: '<path d="M8 20V9a4 4 0 0 1 8 0v11z"/><path d="M8 13h8"/>',
+    heart: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+    slot: '<rect x="4" y="5" width="16" height="14" rx="3" stroke-dasharray="3 3"/><path d="M12 9v6M9 12h6"/>',
+    runner: '<circle cx="14" cy="5" r="2"/><path d="M6 20l4-6 3 2 3-5M10 14l-2-4 5-2 3 3h3M2 10h3M2 14h2"/>',
+    tank: '<path d="M12 3l7 3v5c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/><path d="M9 11h6"/>',
+    boss: '<path d="M4 17l-1-9 5 4 4-7 4 7 5-4-1 9z"/><path d="M4 20h16"/>',
+    cone: '<path d="M12 3l5 15H7z"/><path d="M9 11h6M5 20h14"/>'
+  };
+  var INFO = {
+    freeze: ['Băng', 'Đóng băng', 'Zombie đứng yên 5 giây. Xe vẫn bắn bình thường.'],
+    rainbow: ['Cầu vồng', 'Xe cầu vồng', 'Bật lên rồi chạm một xe trong bãi. Xe đó bắn được zombie mọi màu.'],
+    bomb: ['Bom', 'Bom', 'Bật lên rồi chạm vào đường để nổ. Gây sát thương mọi zombie trong vòng tròn, bất kể màu áo.'],
+    ammo: ['Đạn', 'Nạp đạn', 'Cộng 3 đạn cho mọi xe đang đỗ ở ô.'],
+    heart: ['Tim', 'Thêm tim', 'Nhận ngay 1 tim.'],
+    slot: ['Ô', 'Ô đỗ phụ', 'Mở thêm 1 ô đỗ cho cấp này.'],
+    runner: ['', 'Zombie chạy', 'Chạy nhanh gấp đôi nhưng chỉ có 1 máu. Có vạch tốc độ phía sau.'],
+    tank: ['', 'Zombie giáp', 'Đội mũ sắt, 3 máu, đi chậm. Thanh máu hiện phía trên đầu.'],
+    boss: ['', 'Trùm zombie', 'To gấp đôi, 12 máu, đội vương miện. Cần nhiều xe cùng màu để hạ.'],
+    cone: ['', 'Cọc tiêu', 'Cọc nằm chắn đường ra của xe trong bãi. Cọc biến mất khi một xe sát bên lái đi.']
+  };
+  function svg(id) { return '<svg viewBox="0 0 24 24">' + ICON[id] + '</svg>'; }
+
+  var store = { level: 1, cleared: 0, coins: 30, up: { ammoS: 0, ammoB: 0, fire: 0, hearts: 0, slots: 0 }, boost: {}, seen: {}, granted: {}, mute: false };
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) { var o = JSON.parse(raw); if (o && typeof o === 'object') {
+      store.level = Math.max(1, o.level | 0 || 1); store.cleared = o.cleared | 0; store.coins = Math.max(0, o.coins | 0);
+      store.up = Object.assign(store.up, o.up || {}); store.boost = o.boost || {}; store.seen = o.seen || {}; store.granted = o.granted || {}; store.mute = !!o.mute;
+    } }
+  } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+  function cnt(id) { return store.boost[id] | 0; }
+  function perks() { var u = store.up; return { ammoSmall: 2 * u.ammoS, ammoBig: 4 * u.ammoB, fireMul: 1 + .12 * u.fire, hearts: u.hearts, slots: u.slots }; }
+
+  Game.init({ ctx: cv.getContext('2d'), scale: 1 });
+  function fit() {
+    var r = stage.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var w = Math.max(200, Math.round(r.width * dpr)), h = Math.round(w * 1.6);
+    if (cv.width !== w) { cv.width = w; cv.height = h; }
+    Game.setScale(w / 400);
+  }
+  fit();
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(stage); else window.addEventListener('resize', fit);
+
+  var toastT = 0;
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, 1800); }
+  function showOv(which) { ['ovStart', 'ovWin', 'ovLose', 'ovIntro', 'ovBuy'].forEach(function (k) { $(k).hidden = k !== which; }); }
+  function label() { $('lvl').textContent = 'Cấp ' + G.n; }
+  function snd() { $('btnSnd').classList.toggle('off', !Game.Snd.on); }
+  Game.Snd.on = !store.mute; snd();
+  function coinsUI() { $('coins').textContent = store.coins; }
+
+  /* ------------------------------------------------------------ boosters */
+  function unlocked(n) { return S.BOOSTERS.filter(function (id) { return S.INTRO_LEVEL[id] <= n; }); }
+  function grant(n) { unlocked(n).forEach(function (id) { if (!store.granted[id]) { store.granted[id] = true; store.boost[id] = cnt(id) + 2; } }); }
+  var btns = {};
+  function buildBoosts(n) {
+    var bar = $('boosts'); bar.innerHTML = ''; btns = {};
+    var ids = unlocked(n);
+    if (!ids.length) { var p = document.createElement('div'); p.style.cssText = 'align-self:center;color:var(--muted);font-weight:700;font-size:13px'; p.textContent = 'Booster đầu tiên mở ở cấp ' + S.INTRO_LEVEL.freeze; bar.appendChild(p); return; }
+    ids.forEach(function (id) {
+      var b = document.createElement('button'); b.className = 'bst'; b.setAttribute('aria-label', INFO[id][1]); b.title = INFO[id][1];
+      b.innerHTML = svg(id) + '<span class="nm">' + INFO[id][0] + '</span><span class="ct"></span>';
+      b.addEventListener('click', function () { press(id); });
+      bar.appendChild(b); btns[id] = b;
+    });
+    refreshBoosts();
+  }
+  function refreshBoosts() {
+    Object.keys(btns).forEach(function (id) {
+      var b = btns[id], c = cnt(id);
+      b.querySelector('.ct').textContent = c; b.classList.toggle('zero', c <= 0);
+      b.classList.toggle('on', G.mode === id); b.classList.toggle('new', S.INTRO_LEVEL[id] === G.n);
+    });
+  }
+  var buyId = null;
+  function press(id) {
+    Game.Snd.init(); if (G.state !== 'play') return;
+    var r = Game.useBooster(id);
+    if (r === 'none') { openBuy(id); return; }
+    refreshBoosts();
+  }
+  function openBuy(id) {
+    buyId = id; $('buyIco').innerHTML = svg(id); $('buyTitle').textContent = INFO[id][1];
+    $('buyText').textContent = 'Hết lượt rồi. Mua thêm bằng xu hoặc nhận miễn phí.';
+    $('btnBuy').disabled = store.coins < 40; showOv('ovBuy');
+  }
+  $('btnBuy').addEventListener('click', function () { if (store.coins >= 40) { store.coins -= 40; store.boost[buyId] = cnt(buyId) + 1; save(); coinsUI(); refreshBoosts(); showOv(null); } });
+  $('btnFreeBoost').addEventListener('click', function () { store.boost[buyId] = cnt(buyId) + 1; save(); refreshBoosts(); showOv(null); toast('Demo: đã nhận 1 ' + INFO[buyId][1]); });
+  $('btnBuyX').addEventListener('click', function () { showOv(null); });
+  Game.cb.inv = cnt;
+  Game.cb.onUse = function (id) { store.boost[id] = Math.max(0, cnt(id) - 1); save(); };
+  Game.cb.onChange = function () { refreshBoosts(); };
+  Game.cb.onToast = toast;
+
+  /* ---------------------------------------------------------------- flow */
+  var cur = store.level, lastReward = 0;
+  function imgs(el, list, size) { el.innerHTML = ''; list.forEach(function (a) { var i = new Image(); i.alt = ''; i.src = Game.carIcon(a[0], a[1], size); el.appendChild(i); }); }
+  function startCard() {
+    var n = cur, P = S.levelParams(n), list = [], k;
+    for (k = 0; k < P.nColors; k++) list.push([k, k % 2 ? 3 : 2]);
+    imgs($('startCars'), list, 96);
+    $('lvOut').textContent = 'Cấp ' + n;
+    var u = store.up, pk = [];
+    if (u.ammoS) pk.push('Xe con +' + 2 * u.ammoS + ' đạn'); if (u.ammoB) pk.push('Xe to +' + 4 * u.ammoB + ' đạn'); if (u.fire) pk.push('Bắn nhanh +' + 12 * u.fire + '%'); if (u.hearts) pk.push('+' + u.hearts + ' tim'); if (u.slots) pk.push('+1 ô đỗ');
+    var el = $('startPerks'); el.hidden = !pk.length; el.innerHTML = pk.length ? '<span>Gara: ' + pk.join(' · ') + '</span>' : '';
+    showOv('ovStart');
+  }
+  function begin(n) { showOv(null); Game.start(n, { perks: perks() }); label(); buildBoosts(n); coinsUI(); }
+  function go(n) {
+    Game.Snd.init(); cur = n; grant(n);
+    var key = S.INTROS[n];
+    if (key && !store.seen[n]) {
+      store.seen[n] = true; save();
+      var isB = S.BOOSTERS.indexOf(key) >= 0, inf = INFO[key];
+      $('inTag').textContent = isB ? 'BOOSTER MỚI' : (key === 'cone' ? 'CẢN MỚI' : 'ZOMBIE MỚI'); $('inTag').className = 'tag' + (isB ? '' : ' ob');
+      $('inIco').innerHTML = svg(key); $('inTitle').textContent = inf[1]; $('inText').textContent = inf[2];
+      showOv('ovIntro'); Game.start(n, { perks: perks() }); G.state = 'idle'; label(); buildBoosts(n);
+      return;
+    }
+    begin(n);
+  }
+  $('btnGo').addEventListener('click', function () { begin(cur); });
+  $('btnPlay').addEventListener('click', function () { go(cur); });
+  $('lvMinus').addEventListener('click', function () { cur = Math.max(1, cur - 1); startCard(); });
+  $('lvPlus').addEventListener('click', function () { cur = Math.min(60, cur + 1); startCard(); });
+  $('btnRe').addEventListener('click', function () { Game.Snd.init(); begin(G.n); });
+  $('btnRetry').addEventListener('click', function () { begin(G.n); });
+  $('btnNext').addEventListener('click', function () { go(G.n + 1); });
+  $('btnWinZoo').addEventListener('click', function () { setTab('zoo'); });
+  $('btnSnd').addEventListener('click', function () { Game.Snd.init(); Game.Snd.on = !Game.Snd.on; store.mute = !Game.Snd.on; save(); snd(); if (Game.Snd.on) Game.Snd.pop(); });
+  $('btnRevive').addEventListener('click', function () { Game.reviveHeart(); showOv(null); toast('Demo: +2 tim'); });
+
+  Game.cb.onWin = function () {
+    var n = G.n, B = G.B, first = n > store.cleared;
+    var base = 20 + 3 * Math.max(0, B.hearts) + Math.floor(B.kills / 4) + Math.floor(n / 3);
+    var total = Math.round(base * (first ? 1 : .4));
+    lastReward = total; store.coins += total;
+    var gift = '';
+    if (n % 2 === 0) { var u = unlocked(n); if (u.length) { var g = u[(n * 5) % u.length]; store.boost[g] = cnt(g) + 1; gift = ' · +1 ' + INFO[g][1]; } }
+    if (first) { store.cleared = n; store.level = Math.max(store.level, n + 1); }
+    save(); coinsUI();
+    var hs = ''; for (var i = 0; i < B.maxHearts; i++) hs += '<span style="color:' + (i < B.hearts ? 'var(--heart)' : 'var(--line)') + '">♥</span>';
+    $('winFaces').innerHTML = '<span style="font-size:34px;letter-spacing:4px">' + hs + '</span>';
+    $('winStat').innerHTML = '+' + total + ' xu' + gift + '<small>Hạ ' + B.kills + ' zombie' + (first ? '' : ' · chơi lại: thưởng giảm') + '</small>';
+    $('btnDouble').disabled = false; showOv('ovWin');
+  };
+  $('btnDouble').addEventListener('click', function () { store.coins += lastReward; save(); coinsUI(); $('btnDouble').disabled = true; toast('Demo: x2 xu'); });
+  Game.cb.onLose = function () { showOv('ovLose'); };
+
+  /* ------------------------------------------------------------- input */
+  cv.addEventListener('pointerdown', function (e) {
+    Game.Snd.init();
+    var r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 400, y = (e.clientY - r.top) / r.height * 640;
+    Game.pointer(x, y); e.preventDefault();
+  });
+
+  /* ------------------------------------------------------------ garage */
+  var tab = 'play';
+  function setTab(t) {
+    tab = t; $('paneGame').hidden = t !== 'play'; $('paneZoo').hidden = t !== 'zoo';
+    $('tabPlay').classList.toggle('on', t === 'play'); $('tabZoo').classList.toggle('on', t === 'zoo');
+    if (t === 'zoo') renderGarage(); if (t === 'play') fit();
+  }
+  $('tabPlay').addEventListener('click', function () { setTab('play'); });
+  $('tabZoo').addEventListener('click', function () { setTab('zoo'); });
+  var UPS = [
+    { k: 'ammoS', name: 'Đạn xe con', car: [0, 2], max: 5, cost: [30, 50, 80, 120, 170], eff: function (l) { return (S.AMMO_SMALL + 2 * l) + ' đạn / xe con'; } },
+    { k: 'ammoB', name: 'Đạn xe to', car: [1, 3], max: 5, cost: [40, 70, 110, 160, 220], eff: function (l) { return (S.AMMO_BIG + 4 * l) + ' đạn / xe to'; } },
+    { k: 'fire', name: 'Tốc độ bắn', car: [3, 2], max: 5, cost: [40, 70, 110, 160, 220], eff: function (l) { return 'Bắn nhanh +' + 12 * l + '%'; } },
+    { k: 'hearts', name: 'Tim dự phòng', car: [2, 2], max: 2, cost: [150, 400], eff: function (l) { return (5 + l) + ' tim mỗi cấp'; } },
+    { k: 'slots', name: 'Thêm ô đỗ', car: [4, 3], max: 1, cost: [500], eff: function (l) { return (4 + l) + ' ô đỗ'; } }
+  ];
+  function renderGarage() {
+    var u = store.up;
+    $('carTypes').innerHTML = '<div class="ct"><img alt="" src="' + Game.carIcon(0, 2, 120) + '">Xe con<small>' + (S.AMMO_SMALL + 2 * u.ammoS) + ' đạn</small></div><div class="ct"><img alt="" src="' + Game.carIcon(1, 3, 120) + '">Xe to<small>' + (S.AMMO_BIG + 4 * u.ammoB) + ' đạn</small></div>';
+    var list = $('upList'); list.innerHTML = '<h3>Nâng cấp <small>' + store.coins + ' xu</small></h3>';
+    UPS.forEach(function (d) {
+      var lv = u[d.k], maxed = lv >= d.max, cost = d.cost[lv];
+      var row = document.createElement('div'); row.className = 'up';
+      var pips = ''; for (var i = 0; i < d.max; i++) pips += '<i' + (i < lv ? ' class="on"' : '') + '></i>';
+      row.innerHTML = '<img alt="" src="' + Game.carIcon(d.car[0], d.car[1], 104) + '"><div class="tx">' + d.name + '<small>' + d.eff(lv) + (maxed ? '' : ' → ' + d.eff(lv + 1)) + '</small><div class="pips">' + pips + '</div></div>';
+      var b = document.createElement('button'); b.className = 'btn sm'; b.textContent = maxed ? 'Tối đa' : cost + ' xu'; b.disabled = maxed || store.coins < cost;
+      b.addEventListener('click', function () { if (store.coins >= cost && !maxed) { store.coins -= cost; u[d.k]++; save(); coinsUI(); Game.Snd.init(); Game.Snd.magic(); renderGarage(); } });
+      row.appendChild(b); list.appendChild(row);
+    });
+  }
+
+  /* --------------------------------------------------------------- loop */
+  var last = 0;
+  function frame(ts) {
+    var dt = Math.min(0.05, (ts - last) / 1000 || 0.016); last = ts;
+    if (tab === 'play' && G.B) { Game.update(dt); Game.render(); }
+    requestAnimationFrame(frame);
+  }
+  coinsUI();
+  Game.start(cur, { perks: perks() }); G.state = 'idle'; label(); buildBoosts(cur); startCard();
+  requestAnimationFrame(frame);
+  window.__bus = { store: store, go: go, begin: begin, Game: Game };
+})();
+
+</script>
+
+</body></html>
