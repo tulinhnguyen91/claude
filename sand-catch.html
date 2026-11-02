@@ -759,7 +759,7 @@ const saveM = () => save('sandcatch_meta', JSON.stringify(M));
 
 /* ---------- analytics: events go to a Google Sheet through an Apps Script web app ---------- */
 const LOG_URL = '';
-const APP_VER = 'v15';
+const APP_VER = 'v16';
 let PID = load('sandcatch_pid'); if (!PID) { PID = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); save('sandcatch_pid', PID); }
 let FIRST = +load('sandcatch_first') || 0; if (!FIRST) { FIRST = Date.now(); save('sandcatch_first', String(FIRST)); }
 const SID = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -785,15 +785,15 @@ setInterval(logFlush, 15000);
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if (lv0) logEv('hide', { level: levelN, secs: Math.round((Date.now() - lv0) / 1000), pct: total ? Math.round((total - remaining) / total * 100) : 0 }); logFlush(); } });
 window.addEventListener('pagehide', logFlush);
 const fmt = n => n.toLocaleString('en-US');
-function levelTime(n, nb) { return 0; const mult = { normal: 1, relief: 1.15, hard: .85, super: .78 }[tierOf(n)]; return Math.round((42 + nb * 8) * mult / 5) * 5; }
+function levelTime(n, nb) { if (n < 4) return 0; const mult = { normal: 1, relief: 1.15, hard: .85, super: .78 }[tierOf(n)]; return Math.round((48 + nb * 8) * mult / 5) * 5; }
 
 /* ---------- level ---------- */
 function loadLevel(n) { prepLevel(n); state = 'intro'; runIntro(); }
-function prepLevel(n) {
+function prepLevel(n, quiet) {
   if (lv0) logLevelEnd('abandon');
   levelN = n; L = getLevel(n);
-  lv0 = Date.now(); lvMoves = 0; lvBoosts = []; lvTries[n] = (lvTries[n] || 0) + 1;
-  logEv('level_start', { level: n, tier: L.tier || tierOf(n), tries: lvTries[n], lives: M.lives, streak: M.streak });
+  if (!quiet) { lv0 = Date.now(); lvMoves = 0; lvBoosts = []; lvTries[n] = (lvTries[n] || 0) + 1;
+  logEv('level_start', { level: n, tier: L.tier || tierOf(n), tries: lvTries[n], lives: M.lives, streak: M.streak }); }
   chars = [...new Set(L.art.join(''))];
   const hexes = chars.map(ch => PAL[ch]); buildTables(hexes);
   const cnt = chars.map(() => 0), tones = toneMap(L.art);
@@ -995,7 +995,7 @@ let theme = THEMES[0];
 function applyTheme(n) { theme = THEMES[Math.floor((n - 1) / 6) % THEMES.length]; document.body.style.background = 'linear-gradient(180deg,' + theme.g.join(',') + ')'; }
 
 /* ---------- screens ---------- */
-function openLose() { $('loseTxt').textContent = 'You caught ' + Math.round((total - remaining) / total * 100) + '% of the picture. Need a little more time?'; $('ovLose').hidden = false; }
+function openLose() { logEv('timeout', { level: levelN, pct: total ? Math.round((total - remaining) / total * 100) : 0, secs: lv0 ? Math.round((Date.now() - lv0) / 1000) : 0 }); $('loseTxt').textContent = 'You caught ' + Math.round((total - remaining) / total * 100) + '% of the picture. Need a little more time?'; $('ovLose').hidden = false; }
 function continueRun() { $('ovLose').hidden = true; tLeft = 30000; state = 'play'; updateTimer(true); toast('+30 seconds'); }
 function openBuy(b) {
   const info = BOOST[b]; $('buyIc').innerHTML = ICON[b]; $('buyT').textContent = info.name; $('buyD').textContent = info.desc; $('buyPrice').textContent = info.price;
@@ -1303,7 +1303,7 @@ async function runIntro() {
   }
   const has = { stone: stones.length > 0, ice: blocks.some(b => b.ice > 0), axis: blocks.some(b => b.axis) };
   for (const [o, info] of Object.entries(OBST)) if (has[o] && !M.seen['o_' + o]) { await intro(ICON[o], 'New: ' + info.name, info.desc, 'GOT IT'); M.seen['o_' + o] = 1; saveM(); }
-  if (false) { await intro(ICON.clock, 'New: The Clock', 'Catch all the sand before time runs out. If it does, an ad or a few coins buy you more time.', 'START'); M.seen.timer = 1; saveM(); }
+  if (levelN === 4 && !M.seen.timer) { await intro(ICON.clock, 'New: The Clock', 'Catch all the sand before time runs out. If it does, an ad or a few coins buy you more time.', 'START'); M.seen.timer = 1; saveM(); }
   state = 'play';
   if (levelN === 1) { const hb = blocks.find(b => b.id === L.hint); tut = { only: hb.id };
     coach({ rect: [GX + hb.x * CS - 6, GY - 6, hb.w * CS + 12, (hb.y + hb.h) * CS + 12], hand: [GX + (hb.x + hb.w / 2) * CS, GY + (hb.y + hb.h / 2) * CS, GX + (hb.x + hb.w / 2) * CS, GY + hb.h / 2 * CS], text: 'Drag the <b>blue</b> block up to the top row', by: GY + 4.2 * CS }); }
@@ -1341,9 +1341,9 @@ $('shopX').onclick = () => { $('ovShop').hidden = true; };
 $('buyX').onclick = () => { $('ovBuy').hidden = true; };
 $('btnNext').onclick = () => { audioInit(); afterWin(false); };
 $('btnWinHome').onclick = () => { audioInit(); afterWin(true); };
-$('btnLoseAd').onclick = () => { $('ovLose').hidden = true; showAd(continueRun); };
-$('btnLoseCoin').onclick = () => { if (spend(200)) continueRun(); };
-$('btnLoseRe').onclick = () => { $('ovLose').hidden = true; loseLife(); tryStart(levelN); };
+$('btnLoseAd').onclick = () => { logEv('continue', { level: levelN, via: 'ad' }); $('ovLose').hidden = true; showAd(continueRun); };
+$('btnLoseCoin').onclick = () => { if (spend(200)) { logEv('continue', { level: levelN, via: 'coins' }); continueRun(); } };
+$('btnLoseRe').onclick = () => { $('ovLose').hidden = true; logLevelEnd('lose'); loseLife(); tryStart(levelN); };
 $('hLives').onclick = () => { audioInit(); openLives(); };
 $('livesX').onclick = () => { $('ovLives').hidden = true; };
 $('hRace').onclick = () => { audioInit(); openRace(); };
@@ -1613,7 +1613,7 @@ function resize() {
 addEventListener('resize', resize); resize();
 fullC = document.createElement('canvas'); fullC.width = PW * 5; fullC.height = PH * 5; fullX = fullC.getContext('2d');
 beadC = document.createElement('canvas'); beadC.width = PW * 5; beadC.height = PH * 5; beadX = beadC.getContext('2d'); beadImg = beadX.createImageData(PW * 5, PH * 5); beadBuf = new Uint32Array(beadImg.data.buffer);
-prepLevel(Math.min(M.level, NLEV)); buildStatic(); openHome();
+prepLevel(Math.min(M.level, NLEV), true); buildStatic(); openHome();
 (function frame(now) { for (let i = 0; i < SPEED; i++) update(now); draw(now); requestAnimationFrame(frame); })(performance.now());
 
 window.__sc = {
