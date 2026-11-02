@@ -756,13 +756,44 @@ const TIER_LABEL = { hard: 'HARD LEVEL', super: 'SUPER HARD' };
 let M = { coins: 300, boost: { magnet: 0, grab: 0, hammer: 0 }, level: 1, seen: {}, chest: 0, album: {}, claimed: {} };
 try { const s = JSON.parse(load('sandcatch_meta') || 'null'); if (s) M = Object.assign(M, s); } catch (e) {}
 const saveM = () => save('sandcatch_meta', JSON.stringify(M));
+
+/* ---------- analytics: events go to a Google Sheet through an Apps Script web app ---------- */
+const LOG_URL = '';
+const APP_VER = 'v15';
+let PID = load('sandcatch_pid'); if (!PID) { PID = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); save('sandcatch_pid', PID); }
+let FIRST = +load('sandcatch_first') || 0; if (!FIRST) { FIRST = Date.now(); save('sandcatch_first', String(FIRST)); }
+const SID = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const logQ = []; let lv0 = 0, lvMoves = 0, lvBoosts = [];
+const lvTries = {};
+const logOn = () => !!LOG_URL && location.protocol !== 'file:' && !(typeof TEST !== 'undefined' && TEST);
+function logEv(ev, x) {
+  try { if (!logOn()) return;
+    logQ.push(Object.assign({ ts: new Date().toISOString(), pid: PID, sid: SID, day: Math.floor((Date.now() - FIRST) / 864e5), ev, maxLv: M.level, coins: M.coins, ver: APP_VER }, x || {}));
+    if (logQ.length >= 20) logFlush(); } catch (e) {}
+}
+function logFlush() {
+  if (!logQ.length || !LOG_URL) return; const body = JSON.stringify(logQ.splice(0));
+  try { if (navigator.sendBeacon && navigator.sendBeacon(LOG_URL, new Blob([body], { type: 'text/plain;charset=utf-8' }))) return; } catch (e) {}
+  try { fetch(LOG_URL, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body }); } catch (e) {}
+}
+function logLevelEnd(result) {
+  if (!lv0) return;
+  logEv('level_end', { level: levelN, tier: L ? (L.tier || tierOf(levelN)) : '', result, secs: Math.round((Date.now() - lv0) / 1000), moves: lvMoves, pct: total ? Math.round((total - remaining) / total * 100) : 0, tries: lvTries[levelN] || 1, boosts: lvBoosts.join('|') });
+  lv0 = 0;
+}
+setInterval(logFlush, 15000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (lv0) logEv('hide', { level: levelN, secs: Math.round((Date.now() - lv0) / 1000), pct: total ? Math.round((total - remaining) / total * 100) : 0 }); logFlush(); } });
+window.addEventListener('pagehide', logFlush);
 const fmt = n => n.toLocaleString('en-US');
 function levelTime(n, nb) { return 0; const mult = { normal: 1, relief: 1.15, hard: .85, super: .78 }[tierOf(n)]; return Math.round((42 + nb * 8) * mult / 5) * 5; }
 
 /* ---------- level ---------- */
 function loadLevel(n) { prepLevel(n); state = 'intro'; runIntro(); }
 function prepLevel(n) {
+  if (lv0) logLevelEnd('abandon');
   levelN = n; L = getLevel(n);
+  lv0 = Date.now(); lvMoves = 0; lvBoosts = []; lvTries[n] = (lvTries[n] || 0) + 1;
+  logEv('level_start', { level: n, tier: L.tier || tierOf(n), tries: lvTries[n], lives: M.lives, streak: M.streak });
   chars = [...new Set(L.art.join(''))];
   const hexes = chars.map(ch => PAL[ch]); buildTables(hexes);
   const cnt = chars.map(() => 0), tones = toneMap(L.art);
@@ -870,7 +901,7 @@ let toastT = 0;
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; t.style.animation = 'none'; void t.offsetWidth; t.style.animation = ''; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1900); }
 function overlayOpen() { return ['ovHome', 'ovWin', 'ovLose', 'ovBuy', 'ovIntro', 'ovShop', 'ovAlbum', 'ovChest', 'ovSet', 'ovLv', 'ovAd', 'ovLives', 'ovStreak', 'ovPack', 'ovPig', 'ovRace', 'ovPass', 'ovGal'].some(id => !$(id).hidden) || !$('banner').hidden || coachBlocking; }
 function updateCoins() { document.querySelectorAll('.coins').forEach(e => e.textContent = fmt(M.coins)); }
-function showAd(cb) { if (M.noAds) { toast('Ad-free reward!'); cb(); return; } const ov = $('ovAd'); ov.hidden = false; let n = 3; $('adN').textContent = n; const iv = setInterval(() => { n--; if (n > 0) { $('adN').textContent = n; return; } clearInterval(iv); ov.hidden = true; cb(); }, 900); }
+function showAd(cb) { logEv('ad', { level: levelN, state }); if (M.noAds) { toast('Ad-free reward!'); cb(); return; } const ov = $('ovAd'); ov.hidden = false; let n = 3; $('adN').textContent = n; const iv = setInterval(() => { n--; if (n > 0) { $('adN').textContent = n; return; } clearInterval(iv); ov.hidden = true; cb(); }, 900); }
 function spend(n) { if (M.coins < n) { toast('Not enough coins'); openShop(); return false; } M.coins -= n; saveM(); updateCoins(); sfx.coin(); return true; }
 function boostUnlocked(b) { return !!M.seen['u_' + b]; }
 function updateBoostBar() {
@@ -917,7 +948,7 @@ cv.addEventListener('pointermove', e => { if (!drag) return; const [x, y] = pt(e
   const tx = drag.ox + Math.round((x - drag.sx) / CS), ty = drag.oy + Math.round((y - drag.sy) / CS);
   if (drag.grab) { if ((tx !== b.x || ty !== b.y) && free(b, tx, ty)) { b.x = tx; b.y = ty; sfx.tick(); } return; }
   moveToward(b, tx, ty); });
-const end = () => { if (drag && drag.grab) { if (drag.b.x !== drag.ox || drag.b.y !== drag.oy) { consume('grab'); sfx.magnet(); } else { drag = null; setTarget('grab'); return; } updateBoostBar(); } drag = null; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+const end = () => { if (drag && !drag.grab && (drag.b.x !== drag.ox || drag.b.y !== drag.oy)) lvMoves++; if (drag && drag.grab) { if (drag.b.x !== drag.ox || drag.b.y !== drag.oy) { consume('grab'); sfx.magnet(); } else { drag = null; setTarget('grab'); return; } updateBoostBar(); } drag = null; }; cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
 
 /* ---------- update ---------- */
 let lastPct = -1, lastNow = 0;
@@ -1012,6 +1043,7 @@ function openShop() {
   $('ovShop').hidden = false; updateCoins();
 }
 function shopBuy(id) {
+  logEv('shop', { item: id });
   if (id[0] === 'c') { const [n, , , ad] = SHOP.packs[+id.slice(1)];
     if (ad) { showAd(() => { M.coins += n; saveM(); updateCoins(); toast('+' + n + ' coins'); }); return; }
     M.coins += n; saveM(); updateCoins(); sfx.coin(); toast('Simulated purchase: +' + fmtK(n) + ' coins'); return; }
@@ -1061,7 +1093,7 @@ function openLives() {
   $('btnLifeAd').onclick = () => { if (M.lives >= LIFE_MAX) { toast('Lives are already full'); return; } $('ovLives').hidden = true; showAd(() => { M.lives = Math.min(LIFE_MAX, M.lives + 1); if (M.lives >= LIFE_MAX) M.lifeT = 0; saveM(); refreshHome(); toast('+1 life'); }); };
   $('ovLives').hidden = false;
 }
-function consume(b) { if (freeB[b] > 0) freeB[b]--; else M.boost[b]--; saveM(); }
+function consume(b) { const free = freeB[b] > 0; if (free) freeB[b]--; else M.boost[b]--; saveM(); lvBoosts.push(b); logEv('boost', { level: levelN, boost: b, free: free ? 1 : 0 }); }
 const boostLeft = b => M.boost[b] + freeB[b];
 function raceTick(won) {
   const r = M.race; if (!r || r.done) return;
@@ -1131,6 +1163,7 @@ async function openHome() {
   for (const [f, info] of Object.entries(FEAT)) if (featOn(f) && !M.seen['f_' + f]) { M.seen['f_' + f] = 1; saveM(); await intro(ICON[info.icon], 'New: ' + info.name, info.desc, 'COOL!'); if (f === 'race' && !M.race) raceNew(); refreshHome(); }
 }
 function openWin() {
+  logLevelEnd('win');
   const n = levelN, tier = L.tier || tierOf(n), coins = REWARD[tier], stars = STAR_GAIN[tier];
   M.coins += coins; M.stars += stars; M.pass.xp += stars; M.chest = Math.min(5, M.chest + 1); M.album[n] = 1; M.level = Math.max(M.level, n + 1); M.streak++;
   if (featOn('piggy')) M.piggy = Math.min(PIG_MAX, M.piggy + PIG_ADD);
@@ -1291,8 +1324,8 @@ $('btnSet').onclick = () => { audioInit(); $('ovSet').hidden = false; };
 $('setX').onclick = () => { $('ovSet').hidden = true; };
 $('setSnd').onclick = () => { sndOn = !sndOn; save('sandcatch_snd', sndOn ? '1' : '0'); $('setSnd').textContent = 'SOUND: ' + (sndOn ? 'ON' : 'OFF'); };
 $('setSnd').textContent = 'SOUND: ' + (sndOn ? 'ON' : 'OFF');
-$('setRe').onclick = () => { $('ovSet').hidden = true; if (state === 'play' && remaining < total) { loseLife(); toast('-1 life'); } tryStart(levelN); };
-$('setHome').onclick = () => { $('ovSet').hidden = true; if (state === 'play' && remaining < total) { loseLife(); toast('-1 life'); } openHome(); };
+$('setRe').onclick = () => { $('ovSet').hidden = true; if (state === 'play') logLevelEnd('restart'); if (state === 'play' && remaining < total) { loseLife(); toast('-1 life'); } tryStart(levelN); };
+$('setHome').onclick = () => { $('ovSet').hidden = true; if (state === 'play') logLevelEnd('quit'); if (state === 'play' && remaining < total) { loseLife(); toast('-1 life'); } openHome(); };
 $('setLv').onclick = () => { $('ovSet').hidden = true; const g = $('lvGrid'); g.innerHTML = '';
   for (let i = 1; i <= NLEV; i++) { const b = document.createElement('button'); b.textContent = i; const t = tierOf(i); b.className = (i === levelN ? 'cur ' : '') + (t === 'hard' || t === 'super' ? t : ''); b.onclick = () => { $('ovLv').hidden = true; loadLevel(i); }; g.appendChild(b); }
   $('ovLv').hidden = false; };
@@ -1571,6 +1604,7 @@ document.querySelectorAll('[data-ic]').forEach(el => { el.innerHTML = ICON[el.da
 
 /* ---------- boot ---------- */
 let SPEED = 1, TEST = false;
+setTimeout(() => logEv('session_start', { ua: navigator.userAgent.slice(0, 160), lang: navigator.language, w: innerWidth, h: innerHeight, ref: (document.referrer || '').slice(0, 120), lives: M.lives }), 1500);
 function resize() {
   const S = Math.min(innerWidth / W, innerHeight / H); $('game').style.transform = 'scale(' + S + ')';
   const nk = Math.min(3, Math.max(1, S * (window.devicePixelRatio || 1)));
